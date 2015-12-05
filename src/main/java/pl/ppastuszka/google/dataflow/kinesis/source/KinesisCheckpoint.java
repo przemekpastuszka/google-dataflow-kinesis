@@ -1,6 +1,9 @@
+package pl.ppastuszka.google.dataflow.kinesis.source;
+
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
+import pl.ppastuszka.google.dataflow.kinesis.client.KinesisClientProvider;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -25,8 +28,8 @@ public class KinesisCheckpoint implements UnboundedSource.CheckpointMark, Serial
         this.sequenceNumber = sequenceNumber;
     }
 
-    public String getShardIterator(AmazonKinesis kinesis, String streamName, String shardId) {
-        return kinesis.getShardIterator(streamName, shardId, shardIteratorType, sequenceNumber).getShardIterator();
+    public String getShardIterator(KinesisClientProvider kinesis, String streamName, String shardId) {
+        return kinesis.getKinesisClient().getShardIterator(streamName, shardId, shardIteratorType, sequenceNumber).getShardIterator();
     }
 
     @Override

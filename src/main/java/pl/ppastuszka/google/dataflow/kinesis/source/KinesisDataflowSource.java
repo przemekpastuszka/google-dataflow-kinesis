@@ -1,4 +1,5 @@
-import com.amazonaws.services.kinesis.AmazonKinesis;
+package pl.ppastuszka.google.dataflow.kinesis.source;
+
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.model.StreamDescription;
@@ -8,6 +9,7 @@ import com.google.cloud.dataflow.sdk.coders.SerializableCoder;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
+import pl.ppastuszka.google.dataflow.kinesis.client.KinesisClientProvider;
 
 import java.util.List;
 
@@ -17,26 +19,26 @@ import static java.util.Collections.singletonList;
  * Created by ppastuszka on 05.12.15.
  */
 public class KinesisDataflowSource extends UnboundedSource<byte[], KinesisCheckpoint> {
-    private final AmazonKinesis kinesis;
+    private final KinesisClientProvider kinesis;
     private final String streamName;
     private final String shardId;
     private final ShardIteratorType startIteratorType;
 
-    public KinesisDataflowSource(AmazonKinesis kinesis, String streamName, ShardIteratorType startIteratorType, String shardId) {
+    public KinesisDataflowSource(KinesisClientProvider kinesis, String streamName, ShardIteratorType startIteratorType, String shardId) {
         this.kinesis = kinesis;
         this.streamName = streamName;
         this.shardId = shardId;
         this.startIteratorType = startIteratorType;
     }
 
-    public KinesisDataflowSource(AmazonKinesis kinesis, String streamName, ShardIteratorType startIteratorType) {
+    public KinesisDataflowSource(KinesisClientProvider kinesis, String streamName, ShardIteratorType startIteratorType) {
         this(kinesis, streamName, startIteratorType, null);
     }
 
     @Override
     public List<KinesisDataflowSource> generateInitialSplits(int desiredNumSplits, PipelineOptions options) throws Exception {
         if (shardId == null) {
-            StreamDescription streamDescription = kinesis.describeStream(streamName).getStreamDescription();
+            StreamDescription streamDescription = kinesis.getKinesisClient().describeStream(streamName).getStreamDescription();
             List<Shard> shards = streamDescription.getShards();
             List<KinesisDataflowSource> shardsSources = Lists.newArrayList();
             for (Shard shard : shards) {
