@@ -1,5 +1,6 @@
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.Shard;
+import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.google.cloud.dataflow.sdk.coders.ByteArrayCoder;
 import com.google.cloud.dataflow.sdk.coders.Coder;
@@ -7,6 +8,7 @@ import com.google.cloud.dataflow.sdk.coders.SerializableCoder;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
+
 import java.util.List;
 
 import static java.util.Collections.singletonList;
@@ -15,19 +17,20 @@ import static java.util.Collections.singletonList;
  * Created by ppastuszka on 05.12.15.
  */
 public class KinesisDataflowSource extends UnboundedSource<byte[], KinesisCheckpoint> {
-
     private final AmazonKinesis kinesis;
     private final String streamName;
     private final String shardId;
+    private final ShardIteratorType startIteratorType;
 
-    public KinesisDataflowSource(AmazonKinesis kinesis, String streamName, String shardId) {
+    public KinesisDataflowSource(AmazonKinesis kinesis, String streamName, ShardIteratorType startIteratorType, String shardId) {
         this.kinesis = kinesis;
         this.streamName = streamName;
         this.shardId = shardId;
+        this.startIteratorType = startIteratorType;
     }
 
-    public KinesisDataflowSource(AmazonKinesis kinesis, String streamName) {
-        this(kinesis, streamName, null);
+    public KinesisDataflowSource(AmazonKinesis kinesis, String streamName, ShardIteratorType startIteratorType) {
+        this(kinesis, streamName, startIteratorType, null);
     }
 
     @Override
@@ -37,7 +40,7 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], KinesisCheckp
             List<Shard> shards = streamDescription.getShards();
             List<KinesisDataflowSource> shardsSources = Lists.newArrayList();
             for (Shard shard : shards) {
-                shardsSources.add(new KinesisDataflowSource(kinesis, streamName, shard.getShardId()));
+                shardsSources.add(new KinesisDataflowSource(kinesis, streamName, startIteratorType, shard.getShardId()));
             }
             return shardsSources;
         } else {
@@ -47,7 +50,14 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], KinesisCheckp
 
     @Override
     public UnboundedReader<byte[]> createReader(PipelineOptions options, KinesisCheckpoint checkpointMark) {
-        return new KinesisReader(kinesis, streamName, shardId, checkpointMark, options, this);
+        if (checkpointMark == null) {
+            checkpointMark = new KinesisCheckpoint(startIteratorType);
+        }
+        String temporaryShardId = shardId;
+        if (temporaryShardId == null) {
+            temporaryShardId = "shardId-000000000001";
+        }
+        return new KinesisReader(kinesis, streamName, temporaryShardId, checkpointMark, options, this);
     }
 
     @Override

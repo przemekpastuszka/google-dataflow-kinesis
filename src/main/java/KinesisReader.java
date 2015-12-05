@@ -3,6 +3,7 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.GetRecordsRequest;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
+import com.google.api.client.repackaged.com.google.common.base.Preconditions;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues;
@@ -13,6 +14,7 @@ import java.util.ArrayDeque;
 import java.util.NoSuchElementException;
 
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.AFTER_SEQUENCE_NUMBER;
+import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Created by ppastuszka on 05.12.15.
@@ -26,10 +28,15 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     private ArrayDeque<Record> data = Queues.newArrayDeque();
 
     public KinesisReader(AmazonKinesis kinesis, String streamName, String shardId, KinesisCheckpoint checkpointMark, PipelineOptions options, UnboundedSource<byte[], ?> source) {
+        checkNotNull(kinesis);
+        checkNotNull(streamName);
+        checkNotNull(shardId);
+        checkNotNull(checkpointMark);
+
         this.kinesis = kinesis;
         this.source = source;
         this.initialCheckpoint = checkpointMark;
-        this.shardIterator = kinesis.getShardIterator(streamName, shardId, checkpointMark.getShardIteratorType(), checkpointMark.getSequenceNumber()).getShardIterator();
+        this.shardIterator = checkpointMark.getShardIterator(kinesis, streamName, shardId);
     }
 
     @Override
@@ -51,7 +58,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public boolean advance() throws IOException {
-        if (data.isEmpty()) {
+        if (data.size() < 2) {
             readMore();
         }
 
@@ -60,8 +67,13 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
         } else {
             Record lastElement = data.removeFirst();
             lastSequenceNumber = lastElement.getSequenceNumber();
-            return true;
+            return !data.isEmpty();
         }
+    }
+
+    @Override
+    public byte[] getCurrentRecordId() throws NoSuchElementException {
+        return data.getFirst().getSequenceNumber().getBytes();
     }
 
     @Override
@@ -88,12 +100,12 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     public UnboundedSource.CheckpointMark getCheckpointMark() {
         if (data.isEmpty()) {
             if (lastSequenceNumber != null) {
-                return new KinesisCheckpoint(AFTER_SEQUENCE_NUMBER.toString(), lastSequenceNumber);
+                return new KinesisCheckpoint(AFTER_SEQUENCE_NUMBER, lastSequenceNumber);
             } else {
                 return initialCheckpoint;
             }
         }
-        return new KinesisCheckpoint(AFTER_SEQUENCE_NUMBER.toString(), data.getFirst().getSequenceNumber());
+        return new KinesisCheckpoint(AFTER_SEQUENCE_NUMBER, data.getFirst().getSequenceNumber());
     }
 
     @Override
