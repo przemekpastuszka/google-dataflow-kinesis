@@ -9,7 +9,7 @@ import com.google.cloud.dataflow.sdk.coders.SerializableCoder;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
-import pl.ppastuszka.google.dataflow.kinesis.client.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 
 import java.util.List;
 
@@ -24,7 +24,8 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], KinesisCheckp
     private final String shardId;
     private final ShardIteratorType startIteratorType;
 
-    public KinesisDataflowSource(KinesisClientProvider kinesis, String streamName, ShardIteratorType startIteratorType, String shardId) {
+    public KinesisDataflowSource(KinesisClientProvider kinesis, String streamName, ShardIteratorType startIteratorType, String
+            shardId) {
         this.kinesis = kinesis;
         this.streamName = streamName;
         this.shardId = shardId;
@@ -53,13 +54,14 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], KinesisCheckp
     @Override
     public UnboundedReader<byte[]> createReader(PipelineOptions options, KinesisCheckpoint checkpointMark) {
         if (checkpointMark == null) {
-            checkpointMark = new KinesisCheckpoint(startIteratorType);
+            String temporaryShardId = shardId;
+            if (temporaryShardId == null) {
+                temporaryShardId = "shardId-000000000001";
+            }
+            checkpointMark = new KinesisCheckpoint(streamName, temporaryShardId, startIteratorType);
         }
-        String temporaryShardId = shardId;
-        if (temporaryShardId == null) {
-            temporaryShardId = "shardId-000000000001";
-        }
-        return new KinesisReader(kinesis, streamName, temporaryShardId, checkpointMark, options, this);
+
+        return new KinesisReader(kinesis, checkpointMark, options, this);
     }
 
     @Override

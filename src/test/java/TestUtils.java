@@ -2,7 +2,7 @@ import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.google.cloud.dataflow.sdk.io.BoundedSource;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import org.joda.time.Duration;
-import pl.ppastuszka.google.dataflow.kinesis.client.SimpleKinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.client.provider.SimpleKinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.source.KinesisDataflowSource;
 
 import java.lang.reflect.Constructor;
@@ -14,7 +14,7 @@ public class TestUtils {
 
     public static KinesisDataflowSource getTestKinesisSource() {
         return new KinesisDataflowSource(new SimpleKinesisClientProvider(), System.getenv("TEST_KINESIS_STREAM"),
-                ShardIteratorType.TRIM_HORIZON);
+                ShardIteratorType.LATEST);
     }
 
     public static <T, M extends UnboundedSource.CheckpointMark> BoundedSource<T> toBounded(UnboundedSource<T, M> s, long

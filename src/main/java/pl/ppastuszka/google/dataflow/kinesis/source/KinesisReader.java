@@ -1,20 +1,15 @@
 package pl.ppastuszka.google.dataflow.kinesis.source;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.kinesis.model.GetRecordsRequest;
-import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 import org.joda.time.Instant;
-import pl.ppastuszka.google.dataflow.kinesis.client.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.NoSuchElementException;
 
-import static com.amazonaws.services.kinesis.model.ShardIteratorType.AFTER_SEQUENCE_NUMBER;
 import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -22,74 +17,51 @@ import static com.google.api.client.repackaged.com.google.common.base.Preconditi
  */
 public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     private final KinesisClientProvider kinesis;
+    private KinesisCheckpoint initialCheckpoint;
     private final UnboundedSource<byte[], ?> source;
-    private final KinesisCheckpoint initialCheckpoint;
-    private String shardIterator;
-    private String lastSequenceNumber;
-    private ArrayDeque<Record> data = Queues.newArrayDeque();
+    private ShardRecordsIterator shardIterator;
+    private Optional<Record> currentRecord = Optional.absent();
 
-    public KinesisReader(KinesisClientProvider kinesis, String streamName, String shardId, KinesisCheckpoint checkpointMark, PipelineOptions options, UnboundedSource<byte[], ?> source) {
+    public KinesisReader(KinesisClientProvider kinesis, KinesisCheckpoint checkpointMark, PipelineOptions options,
+                         UnboundedSource<byte[], ?> source) {
         checkNotNull(kinesis);
-        checkNotNull(streamName);
-        checkNotNull(shardId);
         checkNotNull(checkpointMark);
 
         this.kinesis = kinesis;
         this.source = source;
         this.initialCheckpoint = checkpointMark;
-        this.shardIterator = checkpointMark.getShardIterator(kinesis, streamName, shardId);
     }
 
     @Override
     public boolean start() throws IOException {
-        readMore();
-        return !data.isEmpty();
-    }
+        shardIterator = new ShardRecordsIterator(initialCheckpoint, kinesis);
 
-    private void readMore() throws IOException {
-        try {
-            GetRecordsRequest getRecordsRequest = new GetRecordsRequest();
-            GetRecordsResult response = kinesis.getKinesisClient().getRecords(getRecordsRequest.withShardIterator(shardIterator));
-            shardIterator = response.getNextShardIterator();
-            data.addAll(response.getRecords());
-        } catch (AmazonClientException ex) {
-            throw new IOException(ex);
-        }
+        return advance();
     }
 
     @Override
     public boolean advance() throws IOException {
-        if (data.size() < 2) {
-            readMore();
-        }
-
-        if (data.isEmpty()) {
-            return false;
-        } else {
-            Record lastElement = data.removeFirst();
-            lastSequenceNumber = lastElement.getSequenceNumber();
-            return !data.isEmpty();
-        }
+        currentRecord = shardIterator.next();
+        return currentRecord.isPresent();
     }
 
     @Override
     public byte[] getCurrentRecordId() throws NoSuchElementException {
-        return data.getFirst().getSequenceNumber().getBytes();
+        return currentRecord.get().getSequenceNumber().getBytes();
     }
 
     @Override
     public byte[] getCurrent() throws NoSuchElementException {
-        return data.getFirst().getData().array();
+        return currentRecord.get().getData().array();
     }
 
     @Override
     public Instant getCurrentTimestamp() throws NoSuchElementException {
-        return new Instant(data.getFirst().getApproximateArrivalTimestamp());
+        return new Instant(currentRecord.get().getApproximateArrivalTimestamp());
     }
 
     @Override
     public void close() throws IOException {
-        data.clear();
     }
 
     @Override
@@ -99,14 +71,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public UnboundedSource.CheckpointMark getCheckpointMark() {
-        if (data.isEmpty()) {
-            if (lastSequenceNumber != null) {
-                return new KinesisCheckpoint(AFTER_SEQUENCE_NUMBER, lastSequenceNumber);
-            } else {
-                return initialCheckpoint;
-            }
-        }
-        return new KinesisCheckpoint(AFTER_SEQUENCE_NUMBER, data.getFirst().getSequenceNumber());
+        return shardIterator.getCheckpoint();
     }
 
     @Override

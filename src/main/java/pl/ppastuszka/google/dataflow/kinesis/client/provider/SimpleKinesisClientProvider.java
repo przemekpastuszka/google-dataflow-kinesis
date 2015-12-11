@@ -1,4 +1,4 @@
-package pl.ppastuszka.google.dataflow.kinesis.client;
+package pl.ppastuszka.google.dataflow.kinesis.client.provider;
 
 import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.regions.Regions;

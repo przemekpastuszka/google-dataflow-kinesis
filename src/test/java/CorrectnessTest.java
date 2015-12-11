@@ -6,29 +6,39 @@ import com.google.cloud.dataflow.sdk.testing.TestPipeline;
 import com.google.cloud.dataflow.sdk.transforms.DoFn;
 import com.google.cloud.dataflow.sdk.transforms.ParDo;
 import org.junit.Test;
-import pl.ppastuszka.google.dataflow.kinesis.client.SimpleKinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.client.provider.SimpleKinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.source.KinesisDataflowSource;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.*;
 
-/**
- * Created by ppastuszka on 05.12.15.
- */
+
 public class CorrectnessTest {
+    private final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+
     @Test
     public void readerTest() throws Exception {
         String streamName = System.getenv("TEST_KINESIS_STREAM");
         AmazonKinesis kinesis = new SimpleKinesisClientProvider().getKinesisClient();
-        kinesis.putRecord(streamName, ByteBuffer.wrap("aaa".getBytes("UTF-8")), "0");
 
-        Pipeline p = TestPipeline.create();
+
+        final Pipeline p = TestPipeline.create();
         KinesisDataflowSource source = TestUtils.getTestKinesisSource();
 
-        p.apply(Read.named("kinesis reader").from(source).withMaxNumRecords(10)).
-//                apply(Window.<byte[]>into(FixedWindows.of(Duration.standardSeconds(10)))).
+        p.apply(Read.from(source).withMaxNumRecords(1)).
                 apply(ParDo.of(new byteArrayToString())).
                 apply(TextIO.Write.to("/home/ppastuszka/data"));
-        p.run();
+        Future<?> future = singleThreadExecutor.submit(new Runnable() {
+            @Override
+            public void run() {
+                p.run();
+            }
+        });
+
+        Thread.sleep(1000);
+        kinesis.putRecord(streamName, ByteBuffer.wrap("aaa".getBytes("UTF-8")), "0");
+
+        future.get(10, TimeUnit.SECONDS);
     }
 
     private static class byteArrayToString extends DoFn<byte[], String> {

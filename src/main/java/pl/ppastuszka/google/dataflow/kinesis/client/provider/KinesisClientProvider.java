@@ -1,4 +1,4 @@
-package pl.ppastuszka.google.dataflow.kinesis.client;
+package pl.ppastuszka.google.dataflow.kinesis.client.provider;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
