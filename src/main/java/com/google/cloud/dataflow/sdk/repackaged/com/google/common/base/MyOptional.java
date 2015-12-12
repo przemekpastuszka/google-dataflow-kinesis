@@ -5,6 +5,6 @@ package com.google.cloud.dataflow.sdk.repackaged.com.google.common.base;
  */
 public abstract class MyOptional<T> extends Optional<T> {
     public static <T> Optional<T> absent() {
-        return AbsentWithNoSuchElementException.withType();
+        return AbsentWithNoSuchElement.withType();
     }
 }

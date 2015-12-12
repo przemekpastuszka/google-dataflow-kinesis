@@ -3,13 +3,17 @@ package com.google.cloud.dataflow.sdk.repackaged.com.google.common.base;
 
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.annotations.GwtCompatible;
 
-import javax.annotation.Nullable;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import javax.annotation.Nullable;
 
+/***
+ *
+ */
 @GwtCompatible
-public class AbsentWithNoSuchElementException<T> extends Optional<T> {
-    private final static AbsentWithNoSuchElementException INSTANCE = new AbsentWithNoSuchElementException();
+public class AbsentWithNoSuchElement<T> extends Optional<T> {
+    private static final AbsentWithNoSuchElement INSTANCE = new
+            AbsentWithNoSuchElement();
     private static final long serialVersionUID = 0L;
 
     public static <T> Optional<T> withType() {
@@ -58,7 +62,7 @@ public class AbsentWithNoSuchElementException<T> extends Optional<T> {
     }
 
     @Override
-    public boolean equals(@Nullable Object o) {
+    public boolean equals(Object o) {
         return Optional.<T>absent().equals(o);
     }
 

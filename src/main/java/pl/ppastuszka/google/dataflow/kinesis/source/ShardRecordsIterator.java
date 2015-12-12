@@ -1,18 +1,20 @@
 package pl.ppastuszka.google.dataflow.kinesis.source;
 
-import com.amazonaws.services.kinesis.model.GetRecordsResult;
-import com.amazonaws.services.kinesis.model.Record;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues;
+
+import com.amazonaws.services.kinesis.model.GetRecordsResult;
+import com.amazonaws.services.kinesis.model.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 
 import java.util.Deque;
-import java.util.Iterator;
+import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 
-
+/***
+ *
+ */
 public class ShardRecordsIterator {
     private static final Logger LOG = LoggerFactory.getLogger(ShardRecordsIterator.class);
 
@@ -22,7 +24,8 @@ public class ShardRecordsIterator {
 
     private Deque<Record> data = Queues.newArrayDeque();
 
-    public ShardRecordsIterator(SingleShardCheckpoint checkpoint, KinesisClientProvider kinesisClientProvider) {
+    public ShardRecordsIterator(SingleShardCheckpoint checkpoint, KinesisClientProvider
+            kinesisClientProvider) {
         this.checkpoint = checkpoint;
         this.kinesis = kinesisClientProvider;
         shardIterator = checkpoint.getShardIterator(kinesisClientProvider);
@@ -36,7 +39,8 @@ public class ShardRecordsIterator {
         } else {
             Record record = data.removeFirst();
             checkpoint = checkpoint.moveAfter(record.getSequenceNumber());
-            LOG.debug("Reading record with following sequence number: %s", record.getSequenceNumber());
+            LOG.debug("Reading record with following sequence number: %s", record
+                    .getSequenceNumber());
             return MyOptional.of(record);
         }
     }
