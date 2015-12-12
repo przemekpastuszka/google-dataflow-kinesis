@@ -23,10 +23,8 @@ import static java.util.Arrays.asList;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.List;
-import pl.ppastuszka.google.dataflow.kinesis.client.provider.SimpleKinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.source.KinesisDataflowSource;
 
 /***
@@ -78,8 +76,8 @@ public class TestUtils {
 
     public static TableReference getTestTableReference() {
         return new TableReference().
-                setProjectId(getTestProject()).
-                setDatasetId(getTestDataset()).
+                setProjectId(TestConfiguration.get().getTestProject()).
+                setDatasetId(TestConfiguration.get().getTestDataset()).
                 setTableId(getTestTableId());
     }
 
@@ -90,29 +88,6 @@ public class TestUtils {
                 reference.getTableId());
     }
 
-    public static String getTestStagingLocation() {
-        return constructTestBucketPath("staging");
-    }
-
-    public static String getTestTempLocation() {
-        return constructTestBucketPath("tmp");
-    }
-
-    private static String constructTestBucketPath(String directory) {
-        return "gs://" + Paths.get(getTestBucket(), "dataflow", directory).toString();
-    }
-
-    public static String getTestBucket() {
-        return System.getenv("DATAFLOW_TEST_BUCKET");
-    }
-
-    public static String getTestProject() {
-        return System.getenv("DATAFLOW_TEST_PROJECT");
-    }
-
-    public static String getTestDataset() {
-        return System.getenv("DATAFLOW_TEST_DATASET");
-    }
 
     public static String getTestTableId() {
         return randomString();
@@ -121,7 +96,7 @@ public class TestUtils {
     public static KinesisDataflowSource getTestKinesisSource() {
         return new KinesisDataflowSource(
                 getTestKinesisClientProvider(),
-                getTestKinesisStream(),
+                TestConfiguration.get().getTestKinesisStream(),
                 ShardIteratorType.LATEST);
     }
 
@@ -129,24 +104,18 @@ public class TestUtils {
         return new EnvironmentVariableCredentialsProvider();
     }
 
-    private static String getTestKinesisStream() {
-        return System.getenv("TEST_KINESIS_STREAM");
-    }
 
-    private static String getTestRegion() {
-        return System.getenv("TEST_KINESIS_STREAM_REGION");
-    }
 
     public static void putRecords(List<String> data) {
         KinesisProducer producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
                         setCredentialsProvider(getTestAwsCredentialsProvider()).
-                        setRegion(getTestRegion())
+                        setRegion(TestConfiguration.get().getTestRegion())
         );
         List<ListenableFuture<UserRecordResult>> futures = newArrayList();
         for (String s : data) {
             ListenableFuture<UserRecordResult> future = producer.addUserRecord(
-                    getTestKinesisStream(),
+                    TestConfiguration.get().getTestKinesisStream(),
                     Integer.toString(s.hashCode()),
                     ByteBuffer.wrap(s.getBytes(Charsets.UTF_8)));
             futures.add(future);
@@ -164,8 +133,8 @@ public class TestUtils {
         }
     }
 
-    private static SimpleKinesisClientProvider getTestKinesisClientProvider() {
-        return new SimpleKinesisClientProvider();
+    private static TestKinesisClientProvider getTestKinesisClientProvider() {
+        return new TestKinesisClientProvider();
     }
 
     static class ToTableRow extends DoFn<String, TableRow> {

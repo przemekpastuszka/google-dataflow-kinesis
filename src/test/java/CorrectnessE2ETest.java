@@ -32,11 +32,11 @@ public class CorrectnessE2ETest {
     @Test
     public void testCorrectnessOnDataflowService() {
         DataflowPipelineOptions options = PipelineOptionsFactory.as(DataflowPipelineOptions.class);
-        options.setProject(TestUtils.getTestProject());
+        options.setProject(TestConfiguration.get().getTestProject());
         options.setStreaming(true);
         options.setRunner(DataflowPipelineRunner.class);
-        options.setStagingLocation(TestUtils.getTestStagingLocation());
-        options.setTempLocation(TestUtils.getTestTempLocation());
+        options.setStagingLocation(TestConfiguration.get().getTestStagingLocation());
+        options.setTempLocation(TestConfiguration.get().getTestTempLocation());
         Pipeline p = Pipeline.create(options);
 
         List<String> testData = TestUtils.randomStrings(2000);
