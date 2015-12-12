@@ -54,11 +54,12 @@ public class SingleShardCheckpoint implements UnboundedSource.CheckpointMark, Se
                 streamName, shardId, AFTER_SEQUENCE_NUMBER, sequenceNumber);
     }
 
-    public ShardRecordsIterator getShardRecordsIterator(KinesisClientProvider kinesis) {
+    public ShardRecordsIterator getShardRecordsIterator(KinesisClientProvider kinesis) throws
+            IOException {
         return new ShardRecordsIterator(this, kinesis);
     }
 
-    public String getShardIterator(KinesisClientProvider kinesis) {
+    public String getShardIterator(KinesisClientProvider kinesis) throws IOException {
         return kinesis.get().
                 getShardIterator(streamName, shardId, shardIteratorType, sequenceNumber);
     }

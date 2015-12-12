@@ -7,6 +7,7 @@ import static com.amazonaws.services.kinesis.model.ShardIteratorType.LATEST;
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.TRIM_HORIZON;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
+import java.io.IOException;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
@@ -32,7 +33,7 @@ public class DynamicMultiShardCheckpointGenerator implements MultiShardCheckpoin
     }
 
     @Override
-    public MultiShardCheckpoint generate() {
+    public MultiShardCheckpoint generate() throws IOException {
         MultiShardCheckpoint checkpoint = new MultiShardCheckpoint();
         for (Shard shard : kinesis.get().listShards(streamName)) {
             checkpoint.add(

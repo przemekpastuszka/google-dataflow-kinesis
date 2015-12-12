@@ -40,7 +40,7 @@ public class KinesisReaderTest {
     private KinesisReader reader;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         when(generator.generate()).thenReturn(new MultiShardCheckpoint(
                 asList(firstCheckpoint, secondCheckpoint)
         ));

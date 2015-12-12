@@ -2,11 +2,10 @@ package pl.ppastuszka.google.dataflow.kinesis.source;
 
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
         .checkNotNull;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.transform;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.newArrayList;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Function;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
@@ -48,14 +47,10 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     @Override
     public boolean start() throws IOException {
         MultiShardCheckpoint initialCheckpoint = initialCheckpointGenerator.generate();
-        List<ShardRecordsIterator> iterators = transform(
-                initialCheckpoint,
-                new Function<SingleShardCheckpoint, ShardRecordsIterator>() {
-                    @Override
-                    public ShardRecordsIterator apply(SingleShardCheckpoint singleShardCheckpoint) {
-                        return singleShardCheckpoint.getShardRecordsIterator(kinesis);
-                    }
-                });
+        List<ShardRecordsIterator> iterators = newArrayList();
+        for (SingleShardCheckpoint checkpoint : initialCheckpoint) {
+            iterators.add(checkpoint.getShardRecordsIterator(kinesis));
+        }
         shardIterators = new RoundRobin<ShardRecordsIterator>(iterators);
 
         return advance();

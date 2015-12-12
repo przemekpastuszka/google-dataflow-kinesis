@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import static java.util.Arrays.asList;
+import java.io.IOException;
 import java.util.Collections;
 import pl.ppastuszka.google.dataflow.kinesis.client.SimplifiedKinesisClient;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
@@ -48,7 +49,7 @@ public class ShardRecordsIteratorTest {
     private ShardRecordsIterator iterator;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         when(kinesisProvider.get()).thenReturn(kinesisClient);
         when(firstCheckpoint.getShardIterator(kinesisProvider)).thenReturn(INITIAL_ITERATOR);
 
@@ -78,14 +79,14 @@ public class ShardRecordsIteratorTest {
     }
 
     @Test
-    public void returnsAbsentIfNoRecordsPresent() {
+    public void returnsAbsentIfNoRecordsPresent() throws IOException {
         assertThat(iterator.next()).isEqualTo(MyOptional.absent());
         assertThat(iterator.next()).isEqualTo(MyOptional.absent());
         assertThat(iterator.next()).isEqualTo(MyOptional.absent());
     }
 
     @Test
-    public void goesThroughAvailableRecords() {
+    public void goesThroughAvailableRecords() throws IOException {
         when(firstResult.getRecords()).thenReturn(asList(a, b, c));
         when(secondResult.getRecords()).thenReturn(asList(d));
 
@@ -103,7 +104,7 @@ public class ShardRecordsIteratorTest {
     }
 
     @Test
-    public void refreshesExpiredIterator() {
+    public void refreshesExpiredIterator() throws IOException {
         when(firstResult.getRecords()).thenReturn(asList(a));
         when(secondResult.getRecords()).thenReturn(asList(b));
 

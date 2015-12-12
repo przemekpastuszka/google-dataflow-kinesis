@@ -1,5 +1,6 @@
 package pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator;
 
+import java.io.IOException;
 import java.io.Serializable;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
 
@@ -7,5 +8,5 @@ import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpo
  * Created by ppastuszka on 12.12.15.
  */
 public interface MultiShardCheckpointGenerator extends Serializable {
-    MultiShardCheckpoint generate();
+    MultiShardCheckpoint generate() throws IOException;
 }

@@ -12,6 +12,7 @@ import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.IOException;
 import java.util.Deque;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
@@ -29,7 +30,7 @@ public class ShardRecordsIterator {
     private Deque<Record> data = newArrayDeque();
 
     public ShardRecordsIterator(SingleShardCheckpoint checkpoint, KinesisClientProvider
-            kinesisClientProvider) {
+            kinesisClientProvider) throws IOException {
         checkNotNull(checkpoint);
         checkNotNull(kinesisClientProvider);
         this.checkpoint = checkpoint;
@@ -37,7 +38,7 @@ public class ShardRecordsIterator {
         shardIterator = checkpoint.getShardIterator(kinesisClientProvider);
     }
 
-    public Optional<Record> next() {
+    public Optional<Record> next() throws IOException {
         readMoreIfNecessary();
 
         if (data.isEmpty()) {
@@ -52,7 +53,7 @@ public class ShardRecordsIterator {
         }
     }
 
-    private void readMoreIfNecessary() {
+    private void readMoreIfNecessary() throws IOException {
         if (data.isEmpty()) {
             LOG.info("Sending request for more data to Kinesis");
 
