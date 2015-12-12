@@ -5,9 +5,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 
-/**
- * Created by ppastuszka on 05.12.15.
- */
+
 public class SimpleKinesisClientProvider implements KinesisClientProvider {
     @Override
     public AmazonKinesis getKinesisClient() {

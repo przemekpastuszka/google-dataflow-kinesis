@@ -10,7 +10,8 @@ import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvid
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
-import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions.checkNotNull;
+
 
 /**
  * Created by ppastuszka on 05.12.15.

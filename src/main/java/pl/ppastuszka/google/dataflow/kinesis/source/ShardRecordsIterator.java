@@ -42,7 +42,7 @@ public class ShardRecordsIterator implements Iterator<Optional<Record>> {
         } else {
             Record record = data.removeFirst();
             checkpoint = checkpoint.sameShardAfter(record.getSequenceNumber());
-            LOG.debug("Reading record with following sequence number: " + record.getSequenceNumber());
+            LOG.debug("Reading record with following sequence number: %s", record.getSequenceNumber());
             return Optional.of(record);
         }
     }

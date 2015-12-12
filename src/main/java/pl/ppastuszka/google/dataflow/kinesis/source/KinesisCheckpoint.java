@@ -2,6 +2,7 @@ package pl.ppastuszka.google.dataflow.kinesis.source;
 
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 
 import java.io.IOException;
@@ -9,8 +10,8 @@ import java.io.Serializable;
 
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.AFTER_SEQUENCE_NUMBER;
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.AT_SEQUENCE_NUMBER;
-import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkArgument;
-import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions.checkArgument;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Created by ppastuszka on 05.12.15.
