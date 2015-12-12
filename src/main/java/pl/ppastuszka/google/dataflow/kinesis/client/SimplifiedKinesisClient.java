@@ -9,7 +9,6 @@ import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.model.StreamDescription;
-
 import java.util.List;
 
 /***
@@ -22,14 +21,12 @@ public class SimplifiedKinesisClient {
         this.kinesis = kinesis;
     }
 
-    public AmazonKinesis getRawClient() {
-        return kinesis;
-    }
-
     public String getShardIterator(String streamName, String shardId, ShardIteratorType
             shardIteratorType, String startingSequenceNumber) {
-        return kinesis.getShardIterator(streamName, shardId, shardIteratorType.toString(),
-                startingSequenceNumber).getShardIterator();
+
+        return kinesis.getShardIterator(
+                streamName, shardId, shardIteratorType.toString(), startingSequenceNumber)
+                .getShardIterator();
     }
 
     public List<Shard> listShards(String streamName) {
@@ -51,7 +48,8 @@ public class SimplifiedKinesisClient {
     }
 
     public GetRecordsResult getRecords(String shardIterator, Integer limit) {
-        return kinesis.getRecords(new GetRecordsRequest().withShardIterator(shardIterator)
+        return kinesis.getRecords(new GetRecordsRequest()
+                .withShardIterator(shardIterator)
                 .withLimit(limit));
     }
 }

@@ -39,8 +39,9 @@ public class ShardRecordsIterator {
         } else {
             Record record = data.removeFirst();
             checkpoint = checkpoint.moveAfter(record.getSequenceNumber());
-            LOG.debug("Reading record with following sequence number: %s", record
-                    .getSequenceNumber());
+            LOG.debug(
+                    "Reading record with following sequence number: %s",
+                    record.getSequenceNumber());
             return MyOptional.of(record);
         }
     }

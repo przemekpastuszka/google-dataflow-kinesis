@@ -1,9 +1,10 @@
 package pl.ppastuszka.google.dataflow.kinesis.source;
 
 import static com.google.api.client.util.Lists.newArrayList;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Iterables
+        .transform;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Function;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Iterables;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,13 +25,13 @@ public class MultiShardCheckpoint extends ArrayList<SingleShardCheckpoint> imple
     }
 
     public MultiShardCheckpoint(Iterable<ShardRecordsIterator> iterators) {
-        this(newArrayList(Iterables.transform(iterators, new Function<ShardRecordsIterator,
-                SingleShardCheckpoint>() {
-            @Override
-            public SingleShardCheckpoint apply(ShardRecordsIterator shardRecordsIterator) {
-                return shardRecordsIterator.getCheckpoint();
-            }
-        })));
+        this(newArrayList(transform(iterators,
+                new Function<ShardRecordsIterator, SingleShardCheckpoint>() {
+                    @Override
+                    public SingleShardCheckpoint apply(ShardRecordsIterator shardRecordsIterator) {
+                        return shardRecordsIterator.getCheckpoint();
+                    }
+                })));
     }
 
     @Override

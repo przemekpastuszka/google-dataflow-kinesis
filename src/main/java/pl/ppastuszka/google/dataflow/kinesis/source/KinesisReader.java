@@ -12,8 +12,8 @@ import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
 import com.amazonaws.services.kinesis.model.Record;
 import org.joda.time.Instant;
-
 import java.io.IOException;
+import java.util.List;
 import java.util.NoSuchElementException;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.utils.RoundRobin;
@@ -42,13 +42,15 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public boolean start() throws IOException {
-        shardIterators = new RoundRobin<ShardRecordsIterator>(transform(initialCheckpoint, new
-                Function<SingleShardCheckpoint, ShardRecordsIterator>() {
+        List<ShardRecordsIterator> iterators = transform(
+                initialCheckpoint,
+                new Function<SingleShardCheckpoint, ShardRecordsIterator>() {
                     @Override
                     public ShardRecordsIterator apply(SingleShardCheckpoint singleShardCheckpoint) {
                         return singleShardCheckpoint.getShardRecordsIterator(kinesis);
                     }
-                }));
+                });
+        shardIterators = new RoundRobin<ShardRecordsIterator>(iterators);
 
         return advance();
     }

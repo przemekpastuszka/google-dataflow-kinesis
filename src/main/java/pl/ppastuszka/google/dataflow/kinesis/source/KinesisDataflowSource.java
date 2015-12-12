@@ -38,23 +38,22 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
         validate();
     }
 
-    private static MultiShardCheckpoint calculateInitialCheckpoints(KinesisClientProvider
-                                                                            kinesis, String
-                                                                            streamName,
-                                                                    ShardIteratorType
-                                                                            startIteratorType) {
+    private static MultiShardCheckpoint calculateInitialCheckpoints(
+            KinesisClientProvider kinesis, String streamName, ShardIteratorType startIteratorType) {
+
         MultiShardCheckpoint checkpoint = new MultiShardCheckpoint();
         for (Shard shard : kinesis.get().listShards(streamName)) {
-            checkpoint.add(new SingleShardCheckpoint(streamName, shard.getShardId(),
-                    startIteratorType));
+            checkpoint.add(
+                    new SingleShardCheckpoint(streamName, shard.getShardId(), startIteratorType)
+            );
         }
         return checkpoint;
     }
 
     @Override
-    public List<KinesisDataflowSource> generateInitialSplits(int desiredNumSplits,
-                                                             PipelineOptions options) throws
-            Exception {
+    public List<KinesisDataflowSource> generateInitialSplits(
+            int desiredNumSplits, PipelineOptions options) throws Exception {
+
         int partitionSize = max(initialCheckpoint.size() / desiredNumSplits, 1);
 
         List<KinesisDataflowSource> sources = newArrayList();
@@ -67,8 +66,9 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
     }
 
     @Override
-    public UnboundedReader<byte[]> createReader(PipelineOptions options, MultiShardCheckpoint
-            checkpointMark) {
+    public UnboundedReader<byte[]> createReader(
+            PipelineOptions options, MultiShardCheckpoint checkpointMark) {
+
         if (checkpointMark == null) {
             checkpointMark = initialCheckpoint;
         }
