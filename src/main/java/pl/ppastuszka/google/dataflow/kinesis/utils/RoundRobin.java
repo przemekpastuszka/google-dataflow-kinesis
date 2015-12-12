@@ -1,5 +1,6 @@
 package pl.ppastuszka.google.dataflow.kinesis.utils;
 
+import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkArgument;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues
         .newArrayDeque;
 
@@ -14,6 +15,7 @@ public class RoundRobin<T> implements Iterable<T> {
 
     public RoundRobin(Iterable<T> collection) {
         this.deque = newArrayDeque(collection);
+        checkArgument(!deque.isEmpty());
     }
 
     public T getCurrent() {

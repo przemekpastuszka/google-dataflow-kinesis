@@ -63,7 +63,7 @@ public class AbsentWithNoSuchElement<T> extends Optional<T> {
 
     @Override
     public boolean equals(Object o) {
-        return Optional.<T>absent().equals(o);
+        return o == this;
     }
 
     @Override

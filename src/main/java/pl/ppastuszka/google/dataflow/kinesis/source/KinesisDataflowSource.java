@@ -69,11 +69,10 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
     public UnboundedReader<byte[]> createReader(
             PipelineOptions options, MultiShardCheckpoint checkpointMark) {
 
-        MultiShardCheckpointGenerator checkpointGenerator = new
-                StaticMultiShardCheckpointGenerator(checkpointMark);
+        MultiShardCheckpointGenerator checkpointGenerator = initialCheckpointGenerator;
 
-        if (checkpointMark == null) {
-            checkpointGenerator = initialCheckpointGenerator;
+        if (checkpointMark != null) {
+            checkpointGenerator = new StaticMultiShardCheckpointGenerator(checkpointMark);
         }
 
         return new KinesisReader(kinesis, checkpointGenerator, options, this);

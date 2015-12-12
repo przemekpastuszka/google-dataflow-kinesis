@@ -1,14 +1,16 @@
 package pl.ppastuszka.google.dataflow.kinesis.source;
 
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
+        .checkNotNull;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues
+        .newArrayDeque;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues;
 
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Deque;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
@@ -23,10 +25,12 @@ public class ShardRecordsIterator {
     private SingleShardCheckpoint checkpoint;
     private String shardIterator;
 
-    private Deque<Record> data = Queues.newArrayDeque();
+    private Deque<Record> data = newArrayDeque();
 
     public ShardRecordsIterator(SingleShardCheckpoint checkpoint, KinesisClientProvider
             kinesisClientProvider) {
+        checkNotNull(checkpoint);
+        checkNotNull(kinesisClientProvider);
         this.checkpoint = checkpoint;
         this.kinesis = kinesisClientProvider;
         shardIterator = checkpoint.getShardIterator(kinesisClientProvider);
