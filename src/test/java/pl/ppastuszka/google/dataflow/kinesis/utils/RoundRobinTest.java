@@ -35,6 +35,6 @@ public class RoundRobinTest {
         List<String> input = newArrayList("a", "b", "c");
 
         RoundRobin<String> roundRobin = new RoundRobin(input);
-        assertThat(roundRobin).containsOnly(input.toArray());
+        assertThat(roundRobin).hasSize(3).containsOnly(input.toArray());
     }
 }
