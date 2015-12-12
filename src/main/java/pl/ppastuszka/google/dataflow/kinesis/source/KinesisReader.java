@@ -16,6 +16,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator
+        .MultiShardCheckpointGenerator;
 import pl.ppastuszka.google.dataflow.kinesis.utils.RoundRobin;
 
 
@@ -25,23 +29,25 @@ import pl.ppastuszka.google.dataflow.kinesis.utils.RoundRobin;
 public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     private final KinesisClientProvider kinesis;
     private final UnboundedSource<byte[], ?> source;
-    private MultiShardCheckpoint initialCheckpoint;
+    private MultiShardCheckpointGenerator initialCheckpointGenerator;
     private RoundRobin<ShardRecordsIterator> shardIterators;
     private Optional<Record> currentRecord = MyOptional.absent();
 
-    public KinesisReader(KinesisClientProvider kinesis, MultiShardCheckpoint checkpointMark,
+    public KinesisReader(KinesisClientProvider kinesis,
+                         MultiShardCheckpointGenerator initialCheckpointGenerator,
                          PipelineOptions options,
                          UnboundedSource<byte[], ?> source) {
         checkNotNull(kinesis);
-        checkNotNull(checkpointMark);
+        checkNotNull(initialCheckpointGenerator);
 
         this.kinesis = kinesis;
         this.source = source;
-        this.initialCheckpoint = checkpointMark;
+        this.initialCheckpointGenerator = initialCheckpointGenerator;
     }
 
     @Override
     public boolean start() throws IOException {
+        MultiShardCheckpoint initialCheckpoint = initialCheckpointGenerator.generate();
         List<ShardRecordsIterator> iterators = transform(
                 initialCheckpoint,
                 new Function<SingleShardCheckpoint, ShardRecordsIterator>() {

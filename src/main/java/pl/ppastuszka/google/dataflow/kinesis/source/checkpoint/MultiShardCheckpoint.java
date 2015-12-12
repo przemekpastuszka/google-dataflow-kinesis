@@ -1,4 +1,4 @@
-package pl.ppastuszka.google.dataflow.kinesis.source;
+package pl.ppastuszka.google.dataflow.kinesis.source.checkpoint;
 
 import static com.google.api.client.util.Lists.newArrayList;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Iterables
@@ -9,6 +9,7 @@ import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Function;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import pl.ppastuszka.google.dataflow.kinesis.source.ShardRecordsIterator;
 
 /***
  *

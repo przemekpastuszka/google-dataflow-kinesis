@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
 
 /***
  *

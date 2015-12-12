@@ -1,4 +1,4 @@
-package pl.ppastuszka.google.dataflow.kinesis.source;
+package pl.ppastuszka.google.dataflow.kinesis.source.checkpoint;
 
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
         .checkArgument;
@@ -12,6 +12,7 @@ import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import java.io.IOException;
 import java.io.Serializable;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.source.ShardRecordsIterator;
 
 /***
  *

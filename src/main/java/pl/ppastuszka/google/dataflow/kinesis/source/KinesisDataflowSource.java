@@ -2,8 +2,6 @@ package pl.ppastuszka.google.dataflow.kinesis.source;
 
 import static com.google.api.client.util.Lists.newArrayList;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
-        .checkArgument;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
         .checkNotNull;
 import static com.google.common.collect.Lists.partition;
 import com.google.cloud.dataflow.sdk.coders.ByteArrayCoder;
@@ -12,11 +10,17 @@ import com.google.cloud.dataflow.sdk.coders.SerializableCoder;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 
-import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
-import static java.lang.Math.max;
 import java.util.List;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator
+        .DynamicMultiShardCheckpointGenerator;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator
+        .MultiShardCheckpointGenerator;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator
+        .StaticMultiShardCheckpointGenerator;
 
 
 /***
@@ -24,43 +28,39 @@ import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvid
  */
 public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardCheckpoint> {
     private final KinesisClientProvider kinesis;
-    private MultiShardCheckpoint initialCheckpoint;
+    private MultiShardCheckpointGenerator initialCheckpointGenerator;
 
     public KinesisDataflowSource(KinesisClientProvider kinesis, String streamName,
                                  ShardIteratorType startIteratorType) {
-        this(kinesis, calculateInitialCheckpoints(kinesis, streamName, startIteratorType));
+        this(
+                kinesis,
+                new DynamicMultiShardCheckpointGenerator(kinesis, streamName, startIteratorType));
     }
 
     public KinesisDataflowSource(KinesisClientProvider kinesisClientProvider,
-                                 MultiShardCheckpoint initialCheckpoint) {
+                                 MultiShardCheckpointGenerator initialCheckpoint) {
         this.kinesis = kinesisClientProvider;
-        this.initialCheckpoint = initialCheckpoint;
+        this.initialCheckpointGenerator = initialCheckpoint;
         validate();
-    }
-
-    private static MultiShardCheckpoint calculateInitialCheckpoints(
-            KinesisClientProvider kinesis, String streamName, ShardIteratorType startIteratorType) {
-
-        MultiShardCheckpoint checkpoint = new MultiShardCheckpoint();
-        for (Shard shard : kinesis.get().listShards(streamName)) {
-            checkpoint.add(
-                    new SingleShardCheckpoint(streamName, shard.getShardId(), startIteratorType)
-            );
-        }
-        return checkpoint;
     }
 
     @Override
     public List<KinesisDataflowSource> generateInitialSplits(
             int desiredNumSplits, PipelineOptions options) throws Exception {
+        MultiShardCheckpoint multiShardCheckpoint = initialCheckpointGenerator.generate();
 
-        int partitionSize = max(initialCheckpoint.size() / desiredNumSplits, 1);
+        int partitionSize = Math.max(multiShardCheckpoint.size() / desiredNumSplits, 1);
 
         List<KinesisDataflowSource> sources = newArrayList();
-        for (List<SingleShardCheckpoint> singleShardCheckpoint : partition(initialCheckpoint,
-                partitionSize)) {
-            sources.add(new KinesisDataflowSource(kinesis, new MultiShardCheckpoint
-                    (singleShardCheckpoint)));
+        for (List<SingleShardCheckpoint> shardPartition :
+                partition(multiShardCheckpoint, partitionSize)) {
+
+            MultiShardCheckpoint newCheckpoint = new MultiShardCheckpoint(shardPartition);
+
+            sources.add(
+                    new KinesisDataflowSource(
+                            kinesis,
+                            new StaticMultiShardCheckpointGenerator(newCheckpoint)));
         }
         return sources;
     }
@@ -69,11 +69,14 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
     public UnboundedReader<byte[]> createReader(
             PipelineOptions options, MultiShardCheckpoint checkpointMark) {
 
+        MultiShardCheckpointGenerator checkpointGenerator = new
+                StaticMultiShardCheckpointGenerator(checkpointMark);
+
         if (checkpointMark == null) {
-            checkpointMark = initialCheckpoint;
+            checkpointGenerator = initialCheckpointGenerator;
         }
 
-        return new KinesisReader(kinesis, checkpointMark, options, this);
+        return new KinesisReader(kinesis, checkpointGenerator, options, this);
     }
 
     @Override
@@ -84,8 +87,7 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
     @Override
     public void validate() {
         checkNotNull(kinesis);
-        checkNotNull(initialCheckpoint);
-        checkArgument(!initialCheckpoint.isEmpty());
+        checkNotNull(initialCheckpointGenerator);
     }
 
     @Override
