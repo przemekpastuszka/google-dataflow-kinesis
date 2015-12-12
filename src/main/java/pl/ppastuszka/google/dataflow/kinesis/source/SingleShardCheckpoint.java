@@ -2,7 +2,6 @@ package pl.ppastuszka.google.dataflow.kinesis.source;
 
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 
 import java.io.IOException;
@@ -16,17 +15,17 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Pr
 /**
  * Created by ppastuszka on 05.12.15.
  */
-public class KinesisCheckpoint implements UnboundedSource.CheckpointMark, Serializable {
+public class SingleShardCheckpoint implements UnboundedSource.CheckpointMark, Serializable {
     private final String streamName;
     private final String shardId;
-    private final String shardIteratorType;
+    private final ShardIteratorType shardIteratorType;
     private final String sequenceNumber;
 
-    public KinesisCheckpoint(String streamName, String shardId, ShardIteratorType shardIteratorType) {
+    public SingleShardCheckpoint(String streamName, String shardId, ShardIteratorType shardIteratorType) {
         this(streamName, shardId, shardIteratorType, null);
     }
 
-    public KinesisCheckpoint(String streamName, String shardId, ShardIteratorType shardIteratorType, String sequenceNumber) {
+    public SingleShardCheckpoint(String streamName, String shardId, ShardIteratorType shardIteratorType, String sequenceNumber) {
         checkNotNull(streamName);
         checkNotNull(shardId);
         checkNotNull(shardIteratorType);
@@ -38,17 +37,20 @@ public class KinesisCheckpoint implements UnboundedSource.CheckpointMark, Serial
 
         this.streamName = streamName;
         this.shardId = shardId;
-        this.shardIteratorType = shardIteratorType.toString();
+        this.shardIteratorType = shardIteratorType;
         this.sequenceNumber = sequenceNumber;
     }
 
-    public KinesisCheckpoint sameShardAfter(String sequenceNumber) {
-        return new KinesisCheckpoint(streamName, shardId, AFTER_SEQUENCE_NUMBER, sequenceNumber);
+    public SingleShardCheckpoint moveAfter(String sequenceNumber) {
+        return new SingleShardCheckpoint(streamName, shardId, AFTER_SEQUENCE_NUMBER, sequenceNumber);
+    }
+
+    public ShardRecordsIterator getShardRecordsIterator(KinesisClientProvider kinesis) {
+        return new ShardRecordsIterator(this, kinesis);
     }
 
     public String getShardIterator(KinesisClientProvider kinesis) {
-        return kinesis.getKinesisClient().getShardIterator(streamName, shardId, shardIteratorType, sequenceNumber)
-                .getShardIterator();
+        return kinesis.get().getShardIterator(streamName, shardId, shardIteratorType, sequenceNumber);
     }
 
     @Override

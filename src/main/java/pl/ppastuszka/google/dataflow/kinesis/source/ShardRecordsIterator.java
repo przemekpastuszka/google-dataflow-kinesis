@@ -3,6 +3,8 @@ package pl.ppastuszka.google.dataflow.kinesis.source;
 import com.amazonaws.services.kinesis.model.GetRecordsRequest;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.AbsentWithNoSuchElementException;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 
 import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
 
 
@@ -17,12 +20,12 @@ public class ShardRecordsIterator implements Iterator<Optional<Record>> {
     private static final Logger LOG = LoggerFactory.getLogger(ShardRecordsIterator.class);
 
     private final KinesisClientProvider kinesis;
-    private KinesisCheckpoint checkpoint;
+    private SingleShardCheckpoint checkpoint;
     private String shardIterator;
 
-    private ArrayDeque<Record> data = Queues.newArrayDeque();
+    private Deque<Record> data = Queues.newArrayDeque();
 
-    public ShardRecordsIterator(KinesisCheckpoint checkpoint, KinesisClientProvider kinesisClientProvider) {
+    public ShardRecordsIterator(SingleShardCheckpoint checkpoint, KinesisClientProvider kinesisClientProvider) {
         this.checkpoint = checkpoint;
         this.kinesis = kinesisClientProvider;
         shardIterator = checkpoint.getShardIterator(kinesisClientProvider);
@@ -38,12 +41,12 @@ public class ShardRecordsIterator implements Iterator<Optional<Record>> {
         readMoreIfNecessary();
 
         if (data.isEmpty()) {
-            return Optional.absent();
+            return MyOptional.absent();
         } else {
             Record record = data.removeFirst();
-            checkpoint = checkpoint.sameShardAfter(record.getSequenceNumber());
+            checkpoint = checkpoint.moveAfter(record.getSequenceNumber());
             LOG.debug("Reading record with following sequence number: %s", record.getSequenceNumber());
-            return Optional.of(record);
+            return MyOptional.of(record);
         }
     }
 
@@ -52,14 +55,13 @@ public class ShardRecordsIterator implements Iterator<Optional<Record>> {
         if (data.isEmpty()) {
             LOG.info("Sending request for more data to Kinesis");
 
-            GetRecordsRequest getRecordsRequest = new GetRecordsRequest();
-            GetRecordsResult response = kinesis.getKinesisClient().getRecords(getRecordsRequest.withShardIterator(shardIterator));
+            GetRecordsResult response = kinesis.get().getRecords(shardIterator);
             shardIterator = response.getNextShardIterator();
             data.addAll(response.getRecords());
         }
     }
 
-    public KinesisCheckpoint getCheckpoint() {
+    public SingleShardCheckpoint getCheckpoint() {
         return checkpoint;
     }
 }

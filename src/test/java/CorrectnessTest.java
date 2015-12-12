@@ -19,7 +19,7 @@ public class CorrectnessTest {
     @Test
     public void readerTest() throws Exception {
         String streamName = System.getenv("TEST_KINESIS_STREAM");
-        AmazonKinesis kinesis = new SimpleKinesisClientProvider().getKinesisClient();
+        AmazonKinesis kinesis = new SimpleKinesisClientProvider().get();
 
 
         final Pipeline p = TestPipeline.create();

@@ -3,14 +3,21 @@ package pl.ppastuszka.google.dataflow.kinesis.source;
 import com.amazonaws.services.kinesis.model.Record;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Function;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
 import org.joda.time.Instant;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.utils.RoundRobin;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions.checkNotNull;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.transform;
 
 
 /**
@@ -18,12 +25,12 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Pr
  */
 public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     private final KinesisClientProvider kinesis;
-    private KinesisCheckpoint initialCheckpoint;
+    private MultiShardCheckpoint initialCheckpoint;
     private final UnboundedSource<byte[], ?> source;
-    private ShardRecordsIterator shardIterator;
-    private Optional<Record> currentRecord = Optional.absent();
+    private RoundRobin<ShardRecordsIterator> shardIterators;
+    private Optional<Record> currentRecord = MyOptional.absent();
 
-    public KinesisReader(KinesisClientProvider kinesis, KinesisCheckpoint checkpointMark, PipelineOptions options,
+    public KinesisReader(KinesisClientProvider kinesis, MultiShardCheckpoint checkpointMark, PipelineOptions options,
                          UnboundedSource<byte[], ?> source) {
         checkNotNull(kinesis);
         checkNotNull(checkpointMark);
@@ -35,14 +42,26 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public boolean start() throws IOException {
-        shardIterator = new ShardRecordsIterator(initialCheckpoint, kinesis);
+        shardIterators = new RoundRobin<ShardRecordsIterator>(transform(initialCheckpoint, new Function<SingleShardCheckpoint, ShardRecordsIterator>() {
+            @Override
+            public ShardRecordsIterator apply(SingleShardCheckpoint singleShardCheckpoint) {
+                return singleShardCheckpoint.getShardRecordsIterator(kinesis);
+            }
+        }));
 
         return advance();
     }
 
     @Override
     public boolean advance() throws IOException {
-        currentRecord = shardIterator.next();
+        for (int i = 0; i < shardIterators.size(); ++i) {
+            currentRecord = shardIterators.getCurrent().next();
+            if (currentRecord.isPresent()) {
+                break;
+            } else {
+                shardIterators.moveForward();
+            }
+        }
         return currentRecord.isPresent();
     }
 
@@ -72,7 +91,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public UnboundedSource.CheckpointMark getCheckpointMark() {
-        return shardIterator.getCheckpoint();
+        return new MultiShardCheckpoint(shardIterators);
     }
 
     @Override
