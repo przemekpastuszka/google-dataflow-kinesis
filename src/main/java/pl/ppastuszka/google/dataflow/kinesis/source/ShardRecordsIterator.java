@@ -1,9 +1,7 @@
 package pl.ppastuszka.google.dataflow.kinesis.source;
 
-import com.amazonaws.services.kinesis.model.GetRecordsRequest;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.AbsentWithNoSuchElementException;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues;
@@ -11,12 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 
 
-public class ShardRecordsIterator implements Iterator<Optional<Record>> {
+public class ShardRecordsIterator {
     private static final Logger LOG = LoggerFactory.getLogger(ShardRecordsIterator.class);
 
     private final KinesisClientProvider kinesis;
@@ -31,12 +28,6 @@ public class ShardRecordsIterator implements Iterator<Optional<Record>> {
         shardIterator = checkpoint.getShardIterator(kinesisClientProvider);
     }
 
-    @Override
-    public boolean hasNext() {
-        return true;
-    }
-
-    @Override
     public Optional<Record> next() {
         readMoreIfNecessary();
 
@@ -49,7 +40,6 @@ public class ShardRecordsIterator implements Iterator<Optional<Record>> {
             return MyOptional.of(record);
         }
     }
-
 
     private void readMoreIfNecessary() {
         if (data.isEmpty()) {

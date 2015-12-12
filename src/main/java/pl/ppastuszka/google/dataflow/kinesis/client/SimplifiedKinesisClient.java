@@ -10,6 +10,10 @@ import java.util.List;
 public class SimplifiedKinesisClient {
     private final AmazonKinesis kinesis;
 
+    public AmazonKinesis getRawClient() {
+        return kinesis;
+    }
+
     public SimplifiedKinesisClient(AmazonKinesis kinesis) {
         this.kinesis = kinesis;
     }
