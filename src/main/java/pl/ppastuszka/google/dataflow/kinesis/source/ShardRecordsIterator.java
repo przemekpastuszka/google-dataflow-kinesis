@@ -7,6 +7,7 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
+import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
 import org.slf4j.Logger;
@@ -55,7 +56,13 @@ public class ShardRecordsIterator {
         if (data.isEmpty()) {
             LOG.info("Sending request for more data to Kinesis");
 
-            GetRecordsResult response = kinesis.get().getRecords(shardIterator);
+            GetRecordsResult response;
+            try {
+                response = kinesis.get().getRecords(shardIterator);
+            } catch (ExpiredIteratorException e) {
+                String refreshedIterator = checkpoint.getShardIterator(kinesis);
+                response = kinesis.get().getRecords(refreshedIterator);
+            }
             shardIterator = response.getNextShardIterator();
             data.addAll(response.getRecords());
         }

@@ -3,6 +3,7 @@ package pl.ppastuszka.google.dataflow.kinesis.source;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
+import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
 import static org.fest.assertions.Assertions.assertThat;
@@ -25,6 +26,7 @@ import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckp
 public class ShardRecordsIteratorTest {
     public static final String INITIAL_ITERATOR = "INITIAL_ITERATOR";
     public static final String SECOND_ITERATOR = "SECOND_ITERATOR";
+    public static final String SECOND_REFRESHED_ITERATOR = "SECOND_REFRESHED_ITERATOR";
     public static final String THIRD_ITERATOR = "THIRD_ITERATOR";
     public static final String A_SEQUENCE = "a sequence";
     public static final String B_SEQUENCE = "b sequence";
@@ -98,5 +100,19 @@ public class ShardRecordsIteratorTest {
         assertThat(iterator.getCheckpoint()).isEqualTo(dCheckpoint);
         assertThat(iterator.next()).isEqualTo(MyOptional.absent());
         assertThat(iterator.getCheckpoint()).isEqualTo(dCheckpoint);
+    }
+
+    @Test
+    public void refreshesExpiredIterator() {
+        when(firstResult.getRecords()).thenReturn(asList(a));
+        when(secondResult.getRecords()).thenReturn(asList(b));
+
+        when(kinesisClient.getRecords(SECOND_ITERATOR)).thenThrow(ExpiredIteratorException.class);
+        when(aCheckpoint.getShardIterator(kinesisProvider)).thenReturn(SECOND_REFRESHED_ITERATOR);
+        when(kinesisClient.getRecords(SECOND_REFRESHED_ITERATOR)).thenReturn(secondResult);
+
+        assertThat(iterator.next()).isEqualTo(Optional.of(a));
+        assertThat(iterator.next()).isEqualTo(Optional.of(b));
+        assertThat(iterator.next()).isEqualTo(MyOptional.absent());
     }
 }

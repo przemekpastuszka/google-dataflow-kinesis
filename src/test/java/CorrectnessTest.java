@@ -18,7 +18,7 @@ public class CorrectnessTest {
     public void readerTest() throws Exception {
         final Pipeline p = TestPipeline.create();
 
-        List<String> testData = TestUtils.randomStrings(20000);
+        List<String> testData = TestUtils.randomStrings(2000);
 
         PCollection<String> result = p.
                 apply(Read.
