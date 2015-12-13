@@ -13,6 +13,40 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    test {
+        java {
+            srcDir "src/test/unit/java"
+        }
+    }
+
+    integration {
+        java {
+            srcDir 'src/test/integration/java'
+        }
+        compileClasspath += sourceSets.test.runtimeClasspath
+    }
+
+    e2e {
+        java {
+            srcDir 'src/test/e2e/java'
+        }
+        runtimeClasspath += sourceSets.integration.runtimeClasspath
+        compileClasspath += sourceSets.test.runtimeClasspath
+        compileClasspath += sourceSets.integration.runtimeClasspath
+    }
+}
+
+task integration(type: Test) {
+    testClassesDir = sourceSets.integration.output.classesDir
+    classpath += sourceSets.integration.runtimeClasspath
+}
+
+task e2e(type: Test) {
+    testClassesDir = sourceSets.e2e.output.classesDir
+    classpath += sourceSets.e2e.runtimeClasspath
+}
+
 dependencies {
     compile 'com.amazonaws:aws-java-sdk-kinesis:1.10.38'
     compile 'com.google.cloud.dataflow:google-cloud-dataflow-java-sdk-all:1.2.1'

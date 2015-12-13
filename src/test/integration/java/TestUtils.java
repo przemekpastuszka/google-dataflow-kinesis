@@ -104,8 +104,6 @@ public class TestUtils {
         return new EnvironmentVariableCredentialsProvider();
     }
 
-
-
     public static void putRecords(List<String> data) {
         KinesisProducer producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
@@ -138,7 +136,6 @@ public class TestUtils {
     }
 
     static class ToTableRow extends DoFn<String, TableRow> {
-
         @Override
         public void processElement(ProcessContext c) throws Exception {
             c.output(new TableRow().setF(asList(new TableCell().setV(c.element()))));
