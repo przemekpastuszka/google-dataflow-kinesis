@@ -11,6 +11,8 @@ import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
@@ -27,6 +29,8 @@ import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator
  *
  */
 public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardCheckpoint> {
+    private static final Logger LOG = LoggerFactory.getLogger(KinesisDataflowSource.class);
+
     private final KinesisClientProvider kinesis;
     private MultiShardCheckpointGenerator initialCheckpointGenerator;
 
@@ -48,12 +52,17 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
     public List<KinesisDataflowSource> generateInitialSplits(
             int desiredNumSplits, PipelineOptions options) throws Exception {
         MultiShardCheckpoint multiShardCheckpoint = initialCheckpointGenerator.generate();
-
         int partitionSize = Math.max(multiShardCheckpoint.size() / desiredNumSplits, 1);
 
         List<KinesisDataflowSource> sources = newArrayList();
+        List<List<SingleShardCheckpoint>> partitions = partition(multiShardCheckpoint,
+                partitionSize);
+
+        LOG.info(String.format("Generating %s partitions out of %s", partitions.size(),
+                multiShardCheckpoint.size()));
+
         for (List<SingleShardCheckpoint> shardPartition :
-                partition(multiShardCheckpoint, partitionSize)) {
+                partitions) {
 
             MultiShardCheckpoint newCheckpoint = new MultiShardCheckpoint(shardPartition);
 
@@ -68,6 +77,7 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
     @Override
     public UnboundedReader<byte[]> createReader(
             PipelineOptions options, MultiShardCheckpoint checkpointMark) {
+        LOG.info("Creating new reader");
 
         MultiShardCheckpointGenerator checkpointGenerator = initialCheckpointGenerator;
 

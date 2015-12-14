@@ -11,6 +11,8 @@ import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.model.StreamDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -19,6 +21,8 @@ import java.util.concurrent.Callable;
  *
  */
 public class SimplifiedKinesisClient {
+    private static final Logger LOG = LoggerFactory.getLogger(SimplifiedKinesisClient.class);
+
     private final AmazonKinesis kinesis;
 
     public SimplifiedKinesisClient(AmazonKinesis kinesis) {
@@ -81,6 +85,7 @@ public class SimplifiedKinesisClient {
         } catch (ExpiredIteratorException e) {
             throw e;
         } catch (AmazonServiceException e) {
+            LOG.error("Call to Amazon Service failed", e);
             throw new IOException(e);
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -61,12 +61,12 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
         for (int i = 0; i < shardIterators.size(); ++i) {
             currentRecord = shardIterators.getCurrent().next();
             if (currentRecord.isPresent()) {
-                break;
+                return true;
             } else {
                 shardIterators.moveForward();
             }
         }
-        return currentRecord.isPresent();
+        return false;
     }
 
     @Override
@@ -81,7 +81,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public Instant getCurrentTimestamp() throws NoSuchElementException {
-        return new Instant(currentRecord.get().getApproximateArrivalTimestamp());
+        return Instant.now();
     }
 
     @Override
@@ -90,7 +90,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public Instant getWatermark() {
-        return getCurrentTimestamp();
+        return Instant.now();
     }
 
     @Override
