@@ -81,8 +81,6 @@ public class TestUtils {
     }
 
     public static void putRecordsWithKinesisProducer(List<String> data) {
-
-
         KinesisProducer producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
                         setCredentialsProvider(getTestAwsCredentialsProvider()).
