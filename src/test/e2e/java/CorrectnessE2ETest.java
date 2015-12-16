@@ -18,6 +18,9 @@ import org.junit.Before;
 import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.BQ;
 import utils.TestConfiguration;
 import utils.TestUtils;
@@ -26,6 +29,8 @@ import utils.TestUtils;
  * Created by ppastuszka on 12.12.15.
  */
 public class CorrectnessE2ETest {
+    private static final Logger LOG = LoggerFactory.getLogger(CorrectnessE2ETest.class);
+
     private TableReference testTable;
 
     @Before
@@ -60,17 +65,22 @@ public class CorrectnessE2ETest {
                 apply(BigQueryIO.Write.
                         to(testTable).
                         withSchema(TestUtils.getTestTableSchema()));
+        LOG.info("Sending request to start a pipeline");
         PipelineResult result = p.run();
 
+        LOG.info("Waiting for pipeline to start up");
         while (result.getState() != PipelineResult.State.RUNNING) {
-            System.out.println(result.getState());
             Thread.sleep(1000);
         }
         Thread.sleep(1000 * 60 * 3);
-        TestUtils.putRecords(testData);
 
+        LOG.info("Sending events to kinesis");
+        TestUtils.putRecordsWithKinesisProducer(testData);
+
+        LOG.info("Waiting for pipeline to process all sent data");
         Thread.sleep(1000 * 60 * 2);
 
+        LOG.info("Veryfing result in BigQuery");
         List<String> dataFromBQ = BQ.get().readAllFrom(testTable);
         System.out.println(dataFromBQ.size());
         assertThat(newHashSet(testData)).isEqualTo(newHashSet(dataFromBQ));

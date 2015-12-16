@@ -46,15 +46,13 @@ public class ShardRecordsIterator {
         } else {
             Record record = data.removeFirst();
             checkpoint = checkpoint.moveAfter(record.getSequenceNumber());
-            LOG.debug(String.format("Reading record with following sequence number: %s",
-                    record.getSequenceNumber()));
             return MyOptional.of(record);
         }
     }
 
     private void readMoreIfNecessary() throws IOException {
         if (data.isEmpty()) {
-            LOG.info("Sending request for more data to Kinesis");
+            LOG.debug("Sending request for more data to Kinesis");
 
             GetRecordsResult response;
             try {
@@ -64,7 +62,7 @@ public class ShardRecordsIterator {
                 String refreshedIterator = checkpoint.getShardIterator(kinesis);
                 response = kinesis.get().getRecords(refreshedIterator);
             }
-            LOG.info(String.format("Fetched %s new records", response.getRecords().size()));
+            LOG.debug("Fetched {} new records", response.getRecords().size());
             shardIterator = response.getNextShardIterator();
             data.addAll(response.getRecords());
         }

@@ -14,6 +14,9 @@ import org.joda.time.Instant;
 import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
@@ -26,6 +29,8 @@ import pl.ppastuszka.google.dataflow.kinesis.utils.RoundRobin;
  *
  */
 public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
+    private static final Logger LOG = LoggerFactory.getLogger(KinesisReader.class);
+
     private final KinesisClientProvider kinesis;
     private final UnboundedSource<byte[], ?> source;
     private MultiShardCheckpointGenerator initialCheckpointGenerator;
@@ -46,6 +51,8 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public boolean start() throws IOException {
+        LOG.info("Starting reader using {}", initialCheckpointGenerator);
+
         MultiShardCheckpoint initialCheckpoint = initialCheckpointGenerator.generate();
         List<ShardRecordsIterator> iterators = newArrayList();
         for (SingleShardCheckpoint checkpoint : initialCheckpoint) {

@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import utils.TestUtils;
 
 /***
@@ -21,7 +22,7 @@ public class CorrectnessIntegrationTest {
 
     @Test
     public void readerTest() throws Exception {
-        List<String> testData = TestUtils.randomStrings(2000);
+        List<String> testData = TestUtils.randomStrings(20000);
 
         final Pipeline p = TestPipeline.create();
         PCollection<String> result = p.
@@ -39,8 +40,8 @@ public class CorrectnessIntegrationTest {
                 p.run();
             }
         });
-        Thread.sleep(4000);
-        TestUtils.putRecords(testData);
+        Thread.sleep(5000);
+        TestUtils.putRecordsWithKinesisProducer(testData);
         future.get(12, TimeUnit.SECONDS);
     }
 }

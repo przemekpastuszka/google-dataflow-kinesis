@@ -52,6 +52,7 @@ dependencies {
     compile 'com.google.cloud.dataflow:google-cloud-dataflow-java-sdk-all:1.2.1'
 
     testCompile 'org.hamcrest:java-hamcrest:2.0.0.0'
+    testCompile 'org.slf4j:slf4j-simple:1.7.13'
     testCompile 'org.easytesting:fest-assert:1.4'
     testCompile 'com.amazonaws:amazon-kinesis-producer:0.10.2'
     testCompile 'com.amazonaws:aws-java-sdk-sts:1.10.38'

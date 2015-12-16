@@ -58,8 +58,7 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
         List<List<SingleShardCheckpoint>> partitions = partition(multiShardCheckpoint,
                 partitionSize);
 
-        LOG.info(String.format("Generating %s partitions out of %s", partitions.size(),
-                multiShardCheckpoint.size()));
+        LOG.info("Generating {} partitions, each with no more than {} elements", partitions.size(), partitionSize);
 
         for (List<SingleShardCheckpoint> shardPartition :
                 partitions) {
@@ -77,13 +76,13 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
     @Override
     public UnboundedReader<byte[]> createReader(
             PipelineOptions options, MultiShardCheckpoint checkpointMark) {
-        LOG.info("Creating new reader");
-
         MultiShardCheckpointGenerator checkpointGenerator = initialCheckpointGenerator;
 
         if (checkpointMark != null) {
             checkpointGenerator = new StaticMultiShardCheckpointGenerator(checkpointMark);
         }
+
+        LOG.info("Creating new reader using {}", checkpointGenerator);
 
         return new KinesisReader(kinesis, checkpointGenerator, options, this);
     }

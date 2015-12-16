@@ -42,4 +42,9 @@ public class DynamicMultiShardCheckpointGenerator implements MultiShardCheckpoin
         }
         return checkpoint;
     }
+
+    @Override
+    public String toString() {
+        return String.format("Checkpoint generator for %s: %s", streamName, startIteratorType);
+    }
 }
