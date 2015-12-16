@@ -11,7 +11,8 @@ import com.google.cloud.dataflow.sdk.transforms.DoFn;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
@@ -69,10 +70,40 @@ public class TestUtils {
     }
 
     public static AWSCredentialsProvider getTestAwsCredentialsProvider() {
-        return new EnvironmentVariableCredentialsProvider();
+        return new StaticCredentialsProvider(new BasicAWSCredentials(
+                TestConfiguration.get().getAwsAccessKey(),
+                TestConfiguration.get().getAwsSecretKey()
+        ));
     }
 
     public static void putRecords(List<String> data) {
+//        List<List<String>> partitions = Lists.partition(data, 499);
+//
+//        AmazonKinesisClient client = new AmazonKinesisClient
+//                (getTestAwsCredentialsProvider())
+//                .withRegion(
+//                        Regions.fromName(TestConfiguration.get().getTestRegion()));
+//        for (List<String> partition : partitions) {
+//            List<PutRecordsRequestEntry> putRecords = newArrayList();
+//            for (String row : partition) {
+//                putRecords.add(new PutRecordsRequestEntry().
+//                        withData(ByteBuffer.wrap(row.getBytes(Charsets.UTF_8))).
+//                        withPartitionKey(Integer.toString(row.hashCode()))
+//
+//                );
+//            }
+//
+//
+//            PutRecordsResult result = client.putRecords(
+//                    new PutRecordsRequest().
+//                            withStreamName(TestConfiguration.get().getTestKinesisStream()).
+//                            withRecords(putRecords)
+//            );
+//            if(result.getFailedRecordCount() > 0) {
+//                throw new RuntimeException("Failed to upload rows");
+//            }
+//        }
+
         KinesisProducer producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
                         setCredentialsProvider(getTestAwsCredentialsProvider()).

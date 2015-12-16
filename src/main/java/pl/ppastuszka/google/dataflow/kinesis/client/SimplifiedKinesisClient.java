@@ -8,6 +8,8 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
 import com.amazonaws.services.kinesis.model.GetRecordsRequest;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
+import com.amazonaws.services.kinesis.model.LimitExceededException;
+import com.amazonaws.services.kinesis.model.ProvisionedThroughputExceededException;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.model.StreamDescription;
@@ -84,10 +86,18 @@ public class SimplifiedKinesisClient {
             return callable.call();
         } catch (ExpiredIteratorException e) {
             throw e;
-        } catch (AmazonServiceException e) {
-            LOG.error("Call to Amazon Service failed", e);
+        } catch (LimitExceededException | ProvisionedThroughputExceededException e) {
+            LOG.warn("Too many requests to Kinesis", e);
             throw new IOException(e);
+        } catch (AmazonServiceException e) {
+            if (e.getErrorType() == AmazonServiceException.ErrorType.Service) {
+                LOG.warn("Kinesis backend failed", e);
+                throw new IOException(e);
+            }
+            LOG.error("Client side failure", e);
+            throw new RuntimeException(e);
         } catch (Exception e) {
+            LOG.error("Unknown failure", e);
             throw new RuntimeException(e);
         }
     }

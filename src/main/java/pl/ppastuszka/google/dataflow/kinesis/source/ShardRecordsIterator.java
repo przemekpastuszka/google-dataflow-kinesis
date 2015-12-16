@@ -54,7 +54,7 @@ public class ShardRecordsIterator {
 
     private void readMoreIfNecessary() throws IOException {
         if (data.isEmpty()) {
-            LOG.debug("Sending request for more data to Kinesis");
+            LOG.info("Sending request for more data to Kinesis");
 
             GetRecordsResult response;
             try {
@@ -64,7 +64,7 @@ public class ShardRecordsIterator {
                 String refreshedIterator = checkpoint.getShardIterator(kinesis);
                 response = kinesis.get().getRecords(refreshedIterator);
             }
-            LOG.debug(String.format("Fetched %s new records", response.getRecords().size()));
+            LOG.info(String.format("Fetched %s new records", response.getRecords().size()));
             shardIterator = response.getNextShardIterator();
             data.addAll(response.getRecords());
         }

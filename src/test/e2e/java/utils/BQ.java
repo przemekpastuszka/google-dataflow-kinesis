@@ -62,11 +62,11 @@ public class BQ {
             pageToken = callResult.getPageToken();
 
             rows.addAll(callResult.getRows());
-        } while (callResult.getRows().size() > 0);
+        } while (pageToken != null);
 
         List<String> columnValues = Lists.newArrayList();
         for (TableRow row : rows) {
-            columnValues.add((String) row.get("a"));
+            columnValues.add((String) row.getF().get(0).getV());
         }
         return columnValues;
     }

@@ -68,6 +68,18 @@ public class TestConfiguration {
         return configuration.get("AWS_ACCESS_KEY");
     }
 
+    public String getClusterAwsAccessKey() {
+        return configuration.get("CLUSTER_AWS_ACCESS_KEY");
+    }
+
+    public String getClusterAwsSecretKey() {
+        return configuration.get("CLUSTER_AWS_SECRET_KEY");
+    }
+
+    public String getClusterAwsRoleToAssume() {
+        return configuration.get("CLUSTER_AWS_ROLE_TO_ASSUME");
+    }
+
     public String getTestRegion() {
         return configuration.get("TEST_KINESIS_STREAM_REGION");
     }

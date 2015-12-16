@@ -36,7 +36,6 @@ public class CorrectnessE2ETest {
 
     @After
     public void tearDown() throws IOException {
-
         BQ.get().deleteTableIfExists(testTable);
     }
 
@@ -70,8 +69,10 @@ public class CorrectnessE2ETest {
         Thread.sleep(1000 * 60 * 3);
         TestUtils.putRecords(testData);
 
-        Thread.sleep(1000 * 60 * 1);
+        Thread.sleep(1000 * 60 * 2);
 
-        assertThat(newHashSet(testData)).isEqualTo(newHashSet(BQ.get().readAllFrom(testTable)));
+        List<String> dataFromBQ = BQ.get().readAllFrom(testTable);
+        System.out.println(dataFromBQ.size());
+        assertThat(newHashSet(testData)).isEqualTo(newHashSet(dataFromBQ));
     }
 }
