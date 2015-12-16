@@ -5,6 +5,7 @@ import com.google.cloud.dataflow.sdk.testing.TestPipeline;
 import com.google.cloud.dataflow.sdk.transforms.ParDo;
 import com.google.cloud.dataflow.sdk.values.PCollection;
 
+import org.junit.Before;
 import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -19,11 +20,28 @@ import utils.TestUtils;
  */
 public class CorrectnessIntegrationTest {
     private ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+    private List<String> testData;
+
+    @Before
+    public void setUp() {
+        testData = TestUtils.randomStrings(50000);
+    }
 
     @Test
-    public void readerTest() throws Exception {
-        List<String> testData = TestUtils.randomStrings(20000);
+    public void readerTestWithKinesisProducer() throws Exception {
+        Future<?> future = startTestPipeline();
+        TestUtils.putRecordsWithKinesisProducer(testData);
+        future.get(25, TimeUnit.SECONDS);
+    }
 
+    @Test
+    public void readerTestWithOldStylePuts() throws Exception {
+        Future<?> future = startTestPipeline();
+        TestUtils.putRecordsOldStyle(testData);
+        future.get(25, TimeUnit.SECONDS);
+    }
+
+    private Future<?> startTestPipeline() throws InterruptedException {
         final Pipeline p = TestPipeline.create();
         PCollection<String> result = p.
                 apply(Read.
@@ -31,7 +49,6 @@ public class CorrectnessIntegrationTest {
                         withMaxNumRecords(testData.size())
                 ).
                 apply(ParDo.of(new TestUtils.ByteArrayToString()));
-
         DataflowAssert.that(result).containsInAnyOrder(testData);
 
         Future<?> future = singleThreadExecutor.submit(new Runnable() {
@@ -41,7 +58,6 @@ public class CorrectnessIntegrationTest {
             }
         });
         Thread.sleep(5000);
-        TestUtils.putRecordsWithKinesisProducer(testData);
-        future.get(12, TimeUnit.SECONDS);
+        return future;
     }
 }
