@@ -10,11 +10,11 @@ import com.google.cloud.dataflow.sdk.coders.SerializableCoder;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
-import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.client.SerializableKinesisProxyFactory;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator
@@ -31,19 +31,20 @@ import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator
 public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardCheckpoint> {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisDataflowSource.class);
 
-    private final KinesisClientProvider kinesis;
+    private final SerializableKinesisProxyFactory kinesis;
     private MultiShardCheckpointGenerator initialCheckpointGenerator;
 
-    public KinesisDataflowSource(KinesisClientProvider kinesis, String streamName,
-                                 ShardIteratorType startIteratorType) {
+    public KinesisDataflowSource(SerializableKinesisProxyFactory kinesis, String streamName,
+                                 InitialPositionInStream initialPositionInStream) {
         this(
                 kinesis,
-                new DynamicMultiShardCheckpointGenerator(kinesis, streamName, startIteratorType));
+                new DynamicMultiShardCheckpointGenerator(kinesis, streamName,
+                        initialPositionInStream));
     }
 
-    public KinesisDataflowSource(KinesisClientProvider kinesisClientProvider,
+    KinesisDataflowSource(SerializableKinesisProxyFactory kinesisClientConfiguration,
                                  MultiShardCheckpointGenerator initialCheckpoint) {
-        this.kinesis = kinesisClientProvider;
+        this.kinesis = kinesisClientConfiguration;
         this.initialCheckpointGenerator = initialCheckpoint;
         validate();
     }

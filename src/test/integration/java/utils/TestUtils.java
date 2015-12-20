@@ -17,6 +17,7 @@ import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.model.PutRecordsRequest;
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResult;
@@ -74,7 +75,7 @@ public class TestUtils {
         return new KinesisDataflowSource(
                 getTestKinesisClientProvider(),
                 TestConfiguration.get().getTestKinesisStream(),
-                ShardIteratorType.LATEST);
+                InitialPositionInStream.LATEST);
     }
 
     public static AWSCredentialsProvider getTestAwsCredentialsProvider() {

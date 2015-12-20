@@ -1,25 +1,26 @@
 package utils;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
-import pl.ppastuszka.google.dataflow.kinesis.client.SimplifiedKinesisClient;
-import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
+import com.amazonaws.services.kinesis.clientlibrary.proxies.IKinesisProxy;
+import com.amazonaws.services.kinesis.clientlibrary.proxies.KinesisProxy;
+import pl.ppastuszka.google.dataflow.kinesis.client.SerializableKinesisProxyFactory;
 
 /***
  *
  */
-public class TestKinesisClientProvider implements KinesisClientProvider {
+public class TestKinesisClientProvider implements SerializableKinesisProxyFactory {
     private static final long serialVersionUID = 0L;
 
     private final String accessKey;
     private final String secretKey;
     private final String region;
     private final String roleToAssume;
-    private transient SimplifiedKinesisClient client;
 
     public TestKinesisClientProvider() {
         accessKey = TestConfiguration.get().getClusterAwsAccessKey();
@@ -28,27 +29,32 @@ public class TestKinesisClientProvider implements KinesisClientProvider {
         roleToAssume = TestConfiguration.get().getClusterAwsRoleToAssume();
     }
 
-    @Override
-    public synchronized SimplifiedKinesisClient get() {
-        if (client == null) {
-            client = createClient();
-        }
-        return client;
+    private AmazonKinesis getKinesisClient(AWSCredentialsProvider provider) {
+        return new AmazonKinesisClient(provider)
+                .withRegion(Regions.fromName(region));
     }
 
-    private SimplifiedKinesisClient createClient() {
+    private AWSCredentialsProvider getCredentialsProvider() {
         AWSCredentials credentials = new BasicAWSCredentials(
                 accessKey,
                 secretKey
         );
 
-        STSAssumeRoleSessionCredentialsProvider provider = new
+        return new
                 STSAssumeRoleSessionCredentialsProvider(
                 credentials, roleToAssume, "session"
         );
+    }
 
-        AmazonKinesis kinesis = new AmazonKinesisClient(provider)
-                .withRegion(Regions.fromName(region));
-        return new SimplifiedKinesisClient(kinesis);
+    @Override
+    public IKinesisProxy getProxy(String streamName) {
+        AWSCredentialsProvider credentialsProvider = getCredentialsProvider();
+        return new KinesisProxy(
+                streamName,
+                credentialsProvider,
+                getKinesisClient(credentialsProvider),
+                1000L,
+                50
+        );
     }
 }

@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
-import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.client.SerializableKinesisProxyFactory;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator
@@ -30,13 +30,13 @@ import pl.ppastuszka.google.dataflow.kinesis.utils.RoundRobin;
 public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisReader.class);
 
-    private final KinesisClientProvider kinesis;
+    private final SerializableKinesisProxyFactory kinesis;
     private final UnboundedSource<byte[], ?> source;
     private MultiShardCheckpointGenerator initialCheckpointGenerator;
     private RoundRobin<ShardRecordsIterator> shardIterators;
     private Optional<Record> currentRecord = MyOptional.absent();
 
-    public KinesisReader(KinesisClientProvider kinesis,
+    public KinesisReader(SerializableKinesisProxyFactory kinesis,
                          MultiShardCheckpointGenerator initialCheckpointGenerator,
                          PipelineOptions options,
                          UnboundedSource<byte[], ?> source) {
@@ -57,7 +57,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
         for (SingleShardCheckpoint checkpoint : initialCheckpoint) {
             iterators.add(checkpoint.getShardRecordsIterator(kinesis));
         }
-        shardIterators = new RoundRobin<ShardRecordsIterator>(iterators);
+        shardIterators = new RoundRobin<>(iterators);
 
         return advance();
     }

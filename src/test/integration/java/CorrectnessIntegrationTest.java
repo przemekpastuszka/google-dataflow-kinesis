@@ -30,13 +30,13 @@ public class CorrectnessIntegrationTest {
         testData = TestUtils.randomStrings(50000);
     }
 
-//    @Test
-//    public void readerTestWithKinesisProducer() throws Exception {
-//        Future<?> future = startTestPipeline();
-//        TestUtils.putRecordsWithKinesisProducer(testData);
-//        LOG.info("All data sent to kinesis");
-//        future.get(25, TimeUnit.SECONDS);
-//    }
+    @Test
+    public void readerTestWithKinesisProducer() throws Exception {
+        Future<?> future = startTestPipeline();
+        TestUtils.putRecordsWithKinesisProducer(testData);
+        LOG.info("All data sent to kinesis");
+        future.get(25, TimeUnit.SECONDS);
+    }
 
     @Test
     public void readerTestWithOldStylePuts() throws Exception {
