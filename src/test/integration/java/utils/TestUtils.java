@@ -1,14 +1,7 @@
 package utils;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.kinesis.AmazonKinesisClient;
-import com.amazonaws.services.kinesis.model.*;
-import com.amazonaws.services.kinesis.producer.KinesisProducer;
-import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
-import com.amazonaws.services.kinesis.producer.UserRecordResult;
+import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
+import static com.google.api.client.util.Lists.newArrayList;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
@@ -17,16 +10,27 @@ import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
 import com.google.cloud.dataflow.sdk.transforms.DoFn;
 import com.google.common.util.concurrent.ListenableFuture;
-import pl.ppastuszka.google.dataflow.kinesis.source.KinesisDataflowSource;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
+import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.kinesis.AmazonKinesisClient;
+import com.amazonaws.services.kinesis.model.PutRecordsRequest;
+import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
+import com.amazonaws.services.kinesis.model.PutRecordsResult;
+import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
+import com.amazonaws.services.kinesis.model.ShardIteratorType;
+import com.amazonaws.services.kinesis.producer.KinesisProducer;
+import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
+import com.amazonaws.services.kinesis.producer.UserRecordResult;
+import static java.util.Arrays.asList;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.List;
-
-import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
-import static com.google.api.client.util.Lists.newArrayList;
-import static java.util.Arrays.asList;
+import pl.ppastuszka.google.dataflow.kinesis.source.KinesisDataflowSource;
 
 /***
  *
@@ -74,10 +78,27 @@ public class TestUtils {
     }
 
     public static AWSCredentialsProvider getTestAwsCredentialsProvider() {
-        return new StaticCredentialsProvider(new BasicAWSCredentials(
+        return getStaticCredentialsProvider(
                 TestConfiguration.get().getAwsAccessKey(),
                 TestConfiguration.get().getAwsSecretKey()
+        );
+    }
+
+    private static AWSCredentialsProvider getStaticCredentialsProvider(String accessKey,
+                                                                       String secretKey) {
+        return new StaticCredentialsProvider(new BasicAWSCredentials(
+                accessKey, secretKey
         ));
+    }
+
+    public static AWSCredentialsProvider getClusterTestAwsCredentialsProvider() {
+        AWSCredentialsProvider provider = getStaticCredentialsProvider(
+                TestConfiguration.get().getClusterAwsAccessKey(),
+                TestConfiguration.get().getClusterAwsSecretKey()
+        );
+        return new STSAssumeRoleSessionCredentialsProvider(
+                provider, TestConfiguration.get().getClusterAwsRoleToAssume(), "session1"
+        );
     }
 
     public static void putRecordsWithKinesisProducer(List<String> data) {

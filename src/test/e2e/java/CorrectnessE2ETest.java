@@ -16,11 +16,10 @@ import static org.joda.time.Duration.standardSeconds;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import java.io.IOException;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.util.List;
 import utils.BQ;
 import utils.TestConfiguration;
 import utils.TestUtils;
@@ -75,7 +74,7 @@ public class CorrectnessE2ETest {
         Thread.sleep(1000 * 60 * 3);
 
         LOG.info("Sending events to kinesis");
-        TestUtils.putRecordsWithKinesisProducer(testData);
+        TestUtils.putRecordsOldStyle(testData);
 
         LOG.info("Waiting for pipeline to process all sent data");
         Thread.sleep(1000 * 60 * 2);
