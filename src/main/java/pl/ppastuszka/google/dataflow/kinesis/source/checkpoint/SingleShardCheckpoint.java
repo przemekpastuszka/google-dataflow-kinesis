@@ -66,7 +66,8 @@ public class SingleShardCheckpoint implements UnboundedSource.CheckpointMark, Se
 
     @Override
     public String toString() {
-        return String.format("Checkpoint for stream %s, shard %s: %s", streamName, shardId, shardIteratorType);
+        return String.format("Checkpoint for stream %s, shard %s: %s", streamName, shardId,
+                shardIteratorType);
     }
 
     @Override

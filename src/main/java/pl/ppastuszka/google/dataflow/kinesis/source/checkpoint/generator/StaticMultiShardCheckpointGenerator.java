@@ -1,8 +1,8 @@
 package pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.generator;
 
-import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
-
 import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
+
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
 
 /**
  * Created by ppastuszka on 12.12.15.

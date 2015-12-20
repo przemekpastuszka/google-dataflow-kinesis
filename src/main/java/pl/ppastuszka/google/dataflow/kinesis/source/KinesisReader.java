@@ -11,12 +11,11 @@ import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
 import com.amazonaws.services.kinesis.model.Record;
 import org.joda.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.MultiShardCheckpoint;
 import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;

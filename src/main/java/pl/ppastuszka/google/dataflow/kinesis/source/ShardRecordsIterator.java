@@ -1,20 +1,21 @@
 package pl.ppastuszka.google.dataflow.kinesis.source;
 
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
+        .checkNotNull;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues
+        .newArrayDeque;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
+
 import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
-import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
-
 import java.io.IOException;
 import java.util.Deque;
-
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions.checkNotNull;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues.newArrayDeque;
+import pl.ppastuszka.google.dataflow.kinesis.client.provider.KinesisClientProvider;
+import pl.ppastuszka.google.dataflow.kinesis.source.checkpoint.SingleShardCheckpoint;
 
 /***
  *

@@ -58,7 +58,8 @@ public class KinesisDataflowSource extends UnboundedSource<byte[], MultiShardChe
         List<List<SingleShardCheckpoint>> partitions = partition(multiShardCheckpoint,
                 partitionSize);
 
-        LOG.info("Generating {} partitions, each with no more than {} elements", partitions.size(), partitionSize);
+        LOG.info("Generating {} partitions, each with no more than {} elements", partitions.size
+                (), partitionSize);
 
         for (List<SingleShardCheckpoint> shardPartition :
                 partitions) {
