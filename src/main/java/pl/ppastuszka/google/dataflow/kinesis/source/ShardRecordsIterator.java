@@ -39,59 +39,35 @@ public class ShardRecordsIterator {
     private Deque<Record> data = newArrayDeque();
     private IRecordProcessorCheckpointer checkpointer;
 
+    public ShardRecordsIterator(SingleShardCheckpoint initialCheckpoint,
+                                SerializableKinesisProxyFactory serializableKinesisProxyFactory)
+            throws IOException {
+        this(initialCheckpoint, serializableKinesisProxyFactory, new KinesisShardConsumerFactory());
+    }
+
     public ShardRecordsIterator(final SingleShardCheckpoint initialCheckpoint,
                                 SerializableKinesisProxyFactory
-
-                                        kinesisClientConfiguration) throws IOException {
+                                        kinesisClientConfiguration,
+                                KinesisShardConsumerFactory consumerFactory) throws IOException {
         checkNotNull(initialCheckpoint);
         checkNotNull(kinesisClientConfiguration);
+
         this.checkpoint = initialCheckpoint;
         this.kinesis = kinesisClientConfiguration;
 
-        ICheckpoint checkpointProcessor = new ICheckpoint() {
-            @Override
-            public void setCheckpoint(String shardId, ExtendedSequenceNumber
-                    checkpointValue, String concurrencyToken) throws
-                    KinesisClientLibException {
-                ShardRecordsIterator.this.checkpoint = checkpoint.moveAfter(checkpointValue);
-            }
-
-            @Override
-            public ExtendedSequenceNumber getCheckpoint(String shardId) throws
-                    KinesisClientLibException {
-                return ShardRecordsIterator.this.checkpoint.getExtendedSequenceNumber();
-            }
-        };
-        consumer = new SingleThreadShardConsumer(
-                initialCheckpoint.shardId,
-                kinesis.getProxy(initialCheckpoint.streamName),
+        ICheckpoint checkpointProcessor = new InMemoryKinesisCheckpoint();
+        consumer = consumerFactory.getConsumer(
+                initialCheckpoint.getShardId(),
+                kinesis.getProxy(initialCheckpoint.getStreamName()),
                 checkpointProcessor,
-                new IRecordProcessor() {
-                    @Override
-                    public void initialize(InitializationInput initializationInput) {
-
-                    }
-
-                    @Override
-                    public void processRecords(ProcessRecordsInput processRecordsInput) {
-                        data.addAll(processRecordsInput.getRecords());
-                        checkpointer = processRecordsInput.getCheckpointer();
-                    }
-
-                    @Override
-                    public void shutdown(ShutdownInput shutdownInput) {
-
-                    }
-                }
+                new DataFetchingRecordProcessor()
         );
         try {
-            checkpointProcessor.setCheckpoint(checkpoint.shardId, checkpoint
+            checkpointProcessor.setCheckpoint(checkpoint.getShardId(), checkpoint
                     .getExtendedSequenceNumber(), null);
         } catch (KinesisClientLibException e) {
             throw new RuntimeException(e);
         }
-        consumer.consume();
-        consumer.consume();
     }
 
     public Optional<Record> next() throws IOException {
@@ -118,5 +94,38 @@ public class ShardRecordsIterator {
 
     public SingleShardCheckpoint getCheckpoint() {
         return checkpoint;
+    }
+
+    private class InMemoryKinesisCheckpoint implements ICheckpoint {
+        @Override
+        public void setCheckpoint(String shardId, ExtendedSequenceNumber
+                checkpointValue, String concurrencyToken) throws
+                KinesisClientLibException {
+            checkpoint = checkpoint.moveAfter(checkpointValue);
+        }
+
+        @Override
+        public ExtendedSequenceNumber getCheckpoint(String shardId) throws
+                KinesisClientLibException {
+            return checkpoint.getExtendedSequenceNumber();
+        }
+    }
+
+    private class DataFetchingRecordProcessor implements IRecordProcessor {
+        @Override
+        public void initialize(InitializationInput initializationInput) {
+
+        }
+
+        @Override
+        public void processRecords(ProcessRecordsInput processRecordsInput) {
+            data.addAll(processRecordsInput.getRecords());
+            checkpointer = processRecordsInput.getCheckpointer();
+        }
+
+        @Override
+        public void shutdown(ShutdownInput shutdownInput) {
+
+        }
     }
 }

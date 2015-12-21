@@ -15,8 +15,8 @@ import pl.ppastuszka.google.dataflow.kinesis.source.ShardRecordsIterator;
  *
  */
 public class SingleShardCheckpoint implements UnboundedSource.CheckpointMark, Serializable {
-    public final String streamName;
-    public final String shardId;
+    private final String streamName;
+    private final String shardId;
     private final String sequenceNumber;
     private final long subSequenceNumber;
 
@@ -39,6 +39,13 @@ public class SingleShardCheckpoint implements UnboundedSource.CheckpointMark, Se
         this.sequenceNumber = sequenceNumber;
     }
 
+    public String getStreamName() {
+        return streamName;
+    }
+
+    public String getShardId() {
+        return shardId;
+    }
 
     @Override
     public String toString() {
