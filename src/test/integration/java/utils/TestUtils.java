@@ -6,9 +6,20 @@ import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TableSchema;
+import com.google.cloud.dataflow.sdk.Pipeline;
+import com.google.cloud.dataflow.sdk.PipelineResult;
+import com.google.cloud.dataflow.sdk.io.BigQueryIO;
+import com.google.cloud.dataflow.sdk.io.Read;
+import com.google.cloud.dataflow.sdk.options.DataflowPipelineOptions;
+import com.google.cloud.dataflow.sdk.options.PipelineOptionsFactory;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
+import com.google.cloud.dataflow.sdk.runners.DataflowPipelineJob;
+import com.google.cloud.dataflow.sdk.runners.DataflowPipelineRunner;
 import com.google.cloud.dataflow.sdk.transforms.DoFn;
+import com.google.cloud.dataflow.sdk.transforms.ParDo;
+import com.google.cloud.dataflow.sdk.transforms.windowing.FixedWindows;
+import com.google.cloud.dataflow.sdk.transforms.windowing.Window;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -22,10 +33,10 @@ import com.amazonaws.services.kinesis.model.PutRecordsRequest;
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResult;
 import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 import com.amazonaws.services.kinesis.producer.UserRecordResult;
+import static org.joda.time.Duration.standardSeconds;
 import static java.util.Arrays.asList;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -38,10 +49,10 @@ import pl.ppastuszka.google.dataflow.kinesis.source.KinesisDataflowSource;
  */
 public class TestUtils {
 
-    private static final SecureRandom random = new SecureRandom();
+    public static final SecureRandom RANDOM = new SecureRandom();
 
     public static String randomString() {
-        return new BigInteger(130, random).toString(32);
+        return new BigInteger(130, RANDOM).toString(32);
     }
 
     public static List<String> randomStrings(int howMany) {
@@ -90,6 +101,41 @@ public class TestUtils {
         return new StaticCredentialsProvider(new BasicAWSCredentials(
                 accessKey, secretKey
         ));
+    }
+
+    public static DataflowPipelineOptions getTestPipelineOptions() {
+        DataflowPipelineOptions options = PipelineOptionsFactory.as(DataflowPipelineOptions.class);
+        options.setProject(TestConfiguration.get().getTestProject());
+        options.setStreaming(true);
+        options.setJobName(getJobName());
+        options.setRunner(DataflowPipelineRunner.class);
+        options.setStagingLocation(TestConfiguration.get().getTestStagingLocation());
+        options.setTempLocation(TestConfiguration.get().getTestTempLocation());
+        return options;
+    }
+
+    public static String getJobName() {
+        return "e2eKinesisConnectorCorrectness";
+    }
+
+    public static DataflowPipelineJob runTestStreamToBigQueryJob(TableReference targetTable)
+            throws InterruptedException {
+        DataflowPipelineOptions options = getTestPipelineOptions();
+        Pipeline p = Pipeline.create(options);
+        p.
+                apply(Read.from(TestUtils.getTestKinesisSource())).
+                apply(Window.<byte[]>into(FixedWindows.of(standardSeconds(10)))).
+                apply(ParDo.of(new TestUtils.ByteArrayToString())).
+                apply(ParDo.of(new TestUtils.ToTableRow())).
+                apply(BigQueryIO.Write.
+                        to(targetTable).
+                        withSchema(TestUtils.getTestTableSchema()));
+        DataflowPipelineJob job = DataflowPipelineRunner.fromOptions(options).run(p);
+        while (job.getState() != PipelineResult.State.RUNNING) {
+            Thread.sleep(1000);
+        }
+        Thread.sleep(1000 * 60 * 3);
+        return job;
     }
 
     public static AWSCredentialsProvider getClusterTestAwsCredentialsProvider() {

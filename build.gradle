@@ -52,7 +52,7 @@ dependencies {
     compile 'com.google.cloud.dataflow:google-cloud-dataflow-java-sdk-all:1.3.0'
     compile 'com.amazonaws:amazon-kinesis-client:1.6.1'
 
-
+    testCompile 'com.google.apis:google-api-services-compute:v1-rev91-1.21.0'
     testCompile 'org.slf4j:slf4j-simple:1.7.13'
     testCompile 'org.easytesting:fest-assert:1.4'
     testCompile('com.amazonaws:amazon-kinesis-producer:0.10.2') {
