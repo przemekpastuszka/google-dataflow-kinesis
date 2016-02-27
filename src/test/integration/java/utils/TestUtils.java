@@ -149,6 +149,28 @@ public class TestUtils {
     }
 
     public static void putRecordsWithKinesisProducer(List<String> data) {
+        List<ListenableFuture<UserRecordResult>> futures = startPuttingRecordsWIthKinesisProducer
+                (data);
+
+        waitForRecordsToBeSentToKinesis(futures);
+    }
+
+    public static void waitForRecordsToBeSentToKinesis(List<ListenableFuture<UserRecordResult>>
+                                                                futures) {
+        for (ListenableFuture<UserRecordResult> future : futures) {
+            try {
+                UserRecordResult result = future.get();
+                if (!result.isSuccessful()) {
+                    throw new RuntimeException("Failed to send record");
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static List<ListenableFuture<UserRecordResult>>
+    startPuttingRecordsWIthKinesisProducer(List<String> data) {
         KinesisProducer producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
                         setCredentialsProvider(getTestAwsCredentialsProvider()).
@@ -162,17 +184,7 @@ public class TestUtils {
                     ByteBuffer.wrap(s.getBytes(Charsets.UTF_8)));
             futures.add(future);
         }
-
-        for (ListenableFuture<UserRecordResult> future : futures) {
-            try {
-                UserRecordResult result = future.get();
-                if (!result.isSuccessful()) {
-                    throw new RuntimeException("Failed to send record");
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        return futures;
     }
 
     public static void putRecordsOldStyle(List<String> data) {

@@ -6,7 +6,9 @@ import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets;
 import com.google.cloud.dataflow.sdk.runners.DataflowPipelineJob;
+import com.google.common.util.concurrent.ListenableFuture;
 
+import com.amazonaws.services.kinesis.producer.UserRecordResult;
 import static org.fest.assertions.Assertions.assertThat;
 import org.junit.After;
 import org.junit.Before;
@@ -66,19 +68,22 @@ public class CorrectnessE2ETest {
     }
 
     @Test
-    public void testFaultToleranceOnDataflowService() throws InterruptedException, IOException {
+    public void dealsWithInstanceBeingRestarted() throws InterruptedException, IOException {
         job = TestUtils.runTestStreamToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
 
-        List<String> testData = TestUtils.randomStrings(20000);
-        TestUtils.putRecordsWithKinesisProducer(testData);
-
-        Instance randomInstance = chooseRandomInstance();
+        List<String> testData = TestUtils.randomStrings(40000);
+        List<ListenableFuture<UserRecordResult>> futures = TestUtils
+                .startPuttingRecordsWIthKinesisProducer(testData);
+        Instance randomInstance =  chooseRandomInstance();
         GCE.get().stopInstance(randomInstance);
-        List<String> newTestData = TestUtils.randomStrings(20000);
-        TestUtils.putRecordsWithKinesisProducer(newTestData);
+        TestUtils.waitForRecordsToBeSentToKinesis(futures);
+
+        List<String> newTestData = TestUtils.randomStrings(40000);
+        futures = TestUtils.startPuttingRecordsWIthKinesisProducer(testData);
         testData.addAll(newTestData);
         GCE.get().startInstance(randomInstance);
+        TestUtils.waitForRecordsToBeSentToKinesis(futures);
 
         LOG.info("Waiting for pipeline to process all sent data");
         Thread.sleep(1000 * 60 * 6);
