@@ -16,12 +16,17 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static java.lang.System.currentTimeMillis;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import utils.BQ;
 import utils.GCE;
+import utils.PubSubUtil;
 import utils.TestConfiguration;
 import utils.TestUtils;
 
@@ -56,38 +61,57 @@ public class CorrectnessE2ETest {
     @Test
     @Ignore
     public void testSimpleCorrectnessOnDataflowService() throws InterruptedException, IOException {
-        job = TestUtils.runTestStreamToBigQueryJob(testTable);
+        job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
 
         List<String> testData = TestUtils.randomStrings(20000);
         TestUtils.putRecordsWithKinesisProducer(testData);
 
-        LOG.info("Waiting for pipeline to process all sent data");
-        Thread.sleep(1000 * 60 * 2);
-        verifyDataPresentInBigQuery(testData);
+        verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(2));
     }
 
     @Test
     public void dealsWithInstanceBeingRestarted() throws InterruptedException, IOException {
-        job = TestUtils.runTestStreamToBigQueryJob(testTable);
+        job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
 
         List<String> testData = TestUtils.randomStrings(40000);
         List<ListenableFuture<UserRecordResult>> futures = TestUtils
                 .startPuttingRecordsWIthKinesisProducer(testData);
-        Instance randomInstance =  chooseRandomInstance();
+        Instance randomInstance = chooseRandomInstance();
         GCE.get().stopInstance(randomInstance);
         TestUtils.waitForRecordsToBeSentToKinesis(futures);
 
         List<String> newTestData = TestUtils.randomStrings(40000);
-        futures = TestUtils.startPuttingRecordsWIthKinesisProducer(testData);
+        futures = TestUtils.startPuttingRecordsWIthKinesisProducer(newTestData);
         testData.addAll(newTestData);
         GCE.get().startInstance(randomInstance);
         TestUtils.waitForRecordsToBeSentToKinesis(futures);
 
-        LOG.info("Waiting for pipeline to process all sent data");
-        Thread.sleep(1000 * 60 * 6);
-        verifyDataPresentInBigQuery(testData);
+        verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(5));
+    }
+
+    @Test
+    @Ignore
+    public void dealsWithInstanceBeingRestartedonPubSub() throws InterruptedException,
+            IOException, ExecutionException {
+        job = TestUtils.runPubSubToBigQueryJob(testTable);
+        LOG.info("Sending events to kinesis");
+
+        List<String> testData = TestUtils.randomStrings(40000);
+        List<Future<?>> futures = PubSubUtil.get()
+                .startSendingRecordsToPubSub(testData);
+        Instance randomInstance = chooseRandomInstance();
+        GCE.get().stopInstance(randomInstance);
+        PubSubUtil.get().waitForRecordsToBeSentToPubSub(futures);
+
+        List<String> newTestData = TestUtils.randomStrings(40000);
+        futures = PubSubUtil.get().startSendingRecordsToPubSub(newTestData);
+        testData.addAll(newTestData);
+        GCE.get().startInstance(randomInstance);
+        PubSubUtil.get().waitForRecordsToBeSentToPubSub(futures);
+
+        verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(5));
     }
 
     private Instance chooseRandomInstance() throws IOException {
@@ -112,8 +136,28 @@ public class CorrectnessE2ETest {
     }
 
 
-    private void verifyDataPresentInBigQuery(List<String> testData) throws IOException,
+    private void verifyDataPresentInBigQuery(List<String> testData, long timeout) throws
+            IOException,
             InterruptedException {
+        LOG.info("Waiting for pipeline to process all sent data");
+
+        long sleepPeriod = TimeUnit.SECONDS.toMillis(30);
+        long startTime = currentTimeMillis();
+        AssertionError lastException = null;
+        while (currentTimeMillis() - startTime <= timeout) {
+            try {
+                verifySingleDataInBigQuery(testData);
+                return;
+            } catch (AssertionError e) {
+                lastException = e;
+                LOG.warn("Data in BigQuery not yet ready", e);
+                Thread.sleep(sleepPeriod);
+            }
+        }
+        throw lastException;
+    }
+
+    private void verifySingleDataInBigQuery(List<String> testData) throws IOException {
         LOG.info("Veryfing result in BigQuery");
         List<String> dataFromBQ = BQ.get().readAllFrom(testTable);
         HashSet<String> setOfExpectedData = newHashSet(testData);
@@ -124,6 +168,5 @@ public class CorrectnessE2ETest {
 
         assertThat(dataNotInBQ).isEmpty();
         assertThat(redundantDataInBQ).isEmpty();
-        assertThat(dataFromBQ).as("No duplicates").hasSize(testData.size());
     }
 }

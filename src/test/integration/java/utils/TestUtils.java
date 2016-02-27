@@ -9,6 +9,7 @@ import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.dataflow.sdk.Pipeline;
 import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.io.BigQueryIO;
+import com.google.cloud.dataflow.sdk.io.PubsubIO;
 import com.google.cloud.dataflow.sdk.io.Read;
 import com.google.cloud.dataflow.sdk.options.DataflowPipelineOptions;
 import com.google.cloud.dataflow.sdk.options.PipelineOptionsFactory;
@@ -20,6 +21,7 @@ import com.google.cloud.dataflow.sdk.transforms.DoFn;
 import com.google.cloud.dataflow.sdk.transforms.ParDo;
 import com.google.cloud.dataflow.sdk.transforms.windowing.FixedWindows;
 import com.google.cloud.dataflow.sdk.transforms.windowing.Window;
+import com.google.cloud.dataflow.sdk.values.PCollection;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -36,6 +38,7 @@ import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 import com.amazonaws.services.kinesis.producer.UserRecordResult;
+import static org.joda.time.Duration.standardDays;
 import static org.joda.time.Duration.standardSeconds;
 import static java.util.Arrays.asList;
 import java.math.BigInteger;
@@ -118,15 +121,34 @@ public class TestUtils {
         return "e2eKinesisConnectorCorrectness";
     }
 
-    public static DataflowPipelineJob runTestStreamToBigQueryJob(TableReference targetTable)
+    public static DataflowPipelineJob runKinesisToBigQueryJob(TableReference targetTable)
             throws InterruptedException {
         DataflowPipelineOptions options = getTestPipelineOptions();
         Pipeline p = Pipeline.create(options);
-        p.
+        PCollection<String> input = p.
                 apply(Read.from(TestUtils.getTestKinesisSource())).
-                apply(Window.<byte[]>into(FixedWindows.of(standardSeconds(10)))).
-                apply(ParDo.of(new TestUtils.ByteArrayToString())).
-                apply(ParDo.of(new TestUtils.ToTableRow())).
+                apply(ParDo.of(new ByteArrayToString()));
+
+        return runBqJob(targetTable, options, p, input);
+    }
+
+    public static DataflowPipelineJob runPubSubToBigQueryJob(TableReference targetTable)
+            throws InterruptedException {
+        DataflowPipelineOptions options = getTestPipelineOptions();
+        Pipeline p = Pipeline.create(options);
+        PCollection<String> input = p.apply(PubsubIO.Read.topic(TestConfiguration.get()
+                .getTestPubSubTopic()));
+
+        return runBqJob(targetTable, options, p, input);
+    }
+
+    private static DataflowPipelineJob runBqJob(TableReference targetTable,
+                                                DataflowPipelineOptions options, Pipeline p,
+                                                PCollection<String> input) throws
+            InterruptedException {
+        input.apply(Window.<String>into(FixedWindows.of(standardSeconds(10))).
+                withAllowedLateness(standardDays(1))).
+                apply(ParDo.of(new ToTableRow())).
                 apply(BigQueryIO.Write.
                         to(targetTable).
                         withSchema(TestUtils.getTestTableSchema()));
@@ -156,7 +178,7 @@ public class TestUtils {
     }
 
     public static void waitForRecordsToBeSentToKinesis(List<ListenableFuture<UserRecordResult>>
-                                                                futures) {
+                                                               futures) {
         for (ListenableFuture<UserRecordResult> future : futures) {
             try {
                 UserRecordResult result = future.get();

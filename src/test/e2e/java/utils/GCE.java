@@ -5,8 +5,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Lists;
-import com.google.api.services.bigquery.BigqueryScopes;
 import com.google.api.services.compute.Compute;
+import com.google.api.services.compute.ComputeScopes;
 import com.google.api.services.compute.model.Instance;
 import com.google.api.services.compute.model.InstanceList;
 import com.google.api.services.compute.model.Operation;
@@ -31,7 +31,7 @@ public class GCE {
             JacksonFactory jaksonFactory = JacksonFactory.getDefaultInstance();
             NetHttpTransport httpTransport = newTrustedTransport();
             GoogleCredential credential = GoogleCredential.getApplicationDefault
-                    (httpTransport, jaksonFactory).createScoped(BigqueryScopes.all());
+                    (httpTransport, jaksonFactory).createScoped(ComputeScopes.all());
             this.compute = new Compute.Builder(httpTransport, jaksonFactory, credential).build();
         } catch (Exception e) {
             throw new RuntimeException(e);

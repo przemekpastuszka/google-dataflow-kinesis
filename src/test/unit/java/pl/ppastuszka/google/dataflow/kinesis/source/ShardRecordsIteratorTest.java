@@ -47,7 +47,7 @@ public class ShardRecordsIteratorTest {
     @Mock
     private GetRecordsResult data;
     @Mock
-    private ExtendedSequenceNumber LATEST, A_SEQUENCE, B_SEQUENCE, C_SEQUENCE, D_SEQUENCE;
+    private ExtendedSequenceNumber latest, aSequence, bSequence, cSequence, dSequence;
     @Mock
     private Record a, b, c, d;
     @Mock
@@ -59,12 +59,12 @@ public class ShardRecordsIteratorTest {
     public void setUp() throws IOException, InvalidStateException, ShutdownException {
         when(kinesisProvider.getProxy(anyString())).thenReturn(kinesisProxy);
 
-        when(firstCheckpoint.getExtendedSequenceNumber()).thenReturn(LATEST);
-        when(firstCheckpoint.moveAfter(LATEST)).thenReturn(firstCheckpoint);
-        when(firstCheckpoint.moveAfter(A_SEQUENCE)).thenReturn(aCheckpoint);
-        when(aCheckpoint.moveAfter(B_SEQUENCE)).thenReturn(bCheckpoint);
-        when(bCheckpoint.moveAfter(C_SEQUENCE)).thenReturn(cCheckpoint);
-        when(cCheckpoint.moveAfter(D_SEQUENCE)).thenReturn(dCheckpoint);
+        when(firstCheckpoint.getExtendedSequenceNumber()).thenReturn(latest);
+        when(firstCheckpoint.moveAfter(latest)).thenReturn(firstCheckpoint);
+        when(firstCheckpoint.moveAfter(aSequence)).thenReturn(aCheckpoint);
+        when(aCheckpoint.moveAfter(bSequence)).thenReturn(bCheckpoint);
+        when(bCheckpoint.moveAfter(cSequence)).thenReturn(cCheckpoint);
+        when(cCheckpoint.moveAfter(dSequence)).thenReturn(dCheckpoint);
 
         when(data.getRecords()).thenReturn(Collections.<Record>emptyList());
 
@@ -106,10 +106,10 @@ public class ShardRecordsIteratorTest {
                 @Override
                 public void consume() {
                     try {
-                        doAnswer(getAnswer(A_SEQUENCE)).when(checkpointer).checkpoint(a);
-                        doAnswer(getAnswer(B_SEQUENCE)).when(checkpointer).checkpoint(b);
-                        doAnswer(getAnswer(C_SEQUENCE)).when(checkpointer).checkpoint(c);
-                        doAnswer(getAnswer(D_SEQUENCE)).when(checkpointer).checkpoint(d);
+                        doAnswer(getAnswer(aSequence)).when(checkpointer).checkpoint(a);
+                        doAnswer(getAnswer(bSequence)).when(checkpointer).checkpoint(b);
+                        doAnswer(getAnswer(cSequence)).when(checkpointer).checkpoint(c);
+                        doAnswer(getAnswer(dSequence)).when(checkpointer).checkpoint(d);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

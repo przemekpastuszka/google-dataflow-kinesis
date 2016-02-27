@@ -68,6 +68,10 @@ public class TestConfiguration {
         return configuration.get("AWS_ACCESS_KEY");
     }
 
+    public String getTestPubSubTopic() {
+        return configuration.get("PUB_SUB_TEST_TOPIC");
+    }
+
     public String getClusterAwsAccessKey() {
         return configuration.get("CLUSTER_AWS_ACCESS_KEY");
     }
