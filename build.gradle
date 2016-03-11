@@ -1,4 +1,4 @@
-group 'pl.ppastuszka.google.dataflow.kinesis'
+group 'com.google.cloud.dataflow.sdk.io.kinesis'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'

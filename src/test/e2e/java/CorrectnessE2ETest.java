@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import utils.BQ;
 import utils.GCE;
 import utils.PubSubUtil;
@@ -59,8 +60,7 @@ public class CorrectnessE2ETest {
     }
 
     @Test
-    @Ignore
-    public void testSimpleCorrectnessOnDataflowService() throws InterruptedException, IOException {
+    public void testSimpleCorrectnessOnDataflowService() throws InterruptedException, IOException, TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
 
@@ -71,7 +71,8 @@ public class CorrectnessE2ETest {
     }
 
     @Test
-    public void dealsWithInstanceBeingRestarted() throws InterruptedException, IOException {
+    @Ignore
+    public void dealsWithInstanceBeingRestarted() throws InterruptedException, IOException, TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
 

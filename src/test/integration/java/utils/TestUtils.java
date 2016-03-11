@@ -9,8 +9,8 @@ import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.dataflow.sdk.Pipeline;
 import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.io.BigQueryIO;
+import com.google.cloud.dataflow.sdk.io.KinesisIO;
 import com.google.cloud.dataflow.sdk.io.PubsubIO;
-import com.google.cloud.dataflow.sdk.io.Read;
 import com.google.cloud.dataflow.sdk.options.DataflowPipelineOptions;
 import com.google.cloud.dataflow.sdk.options.PipelineOptionsFactory;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
@@ -26,7 +26,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
@@ -37,15 +36,19 @@ import com.amazonaws.services.kinesis.model.PutRecordsResult;
 import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
+import com.amazonaws.services.kinesis.producer.UserRecordFailedException;
 import com.amazonaws.services.kinesis.producer.UserRecordResult;
 import static org.joda.time.Duration.standardDays;
 import static org.joda.time.Duration.standardSeconds;
+import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.List;
-import pl.ppastuszka.google.dataflow.kinesis.source.KinesisDataflowSource;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /***
  *
@@ -85,13 +88,6 @@ public class TestUtils {
         return randomString();
     }
 
-    public static KinesisDataflowSource getTestKinesisSource() {
-        return new KinesisDataflowSource(
-                getTestKinesisClientProvider(),
-                TestConfiguration.get().getTestKinesisStream(),
-                InitialPositionInStream.LATEST);
-    }
-
     public static AWSCredentialsProvider getTestAwsCredentialsProvider() {
         return getStaticCredentialsProvider(
                 TestConfiguration.get().getAwsAccessKey(),
@@ -126,7 +122,11 @@ public class TestUtils {
         DataflowPipelineOptions options = getTestPipelineOptions();
         Pipeline p = Pipeline.create(options);
         PCollection<String> input = p.
-                apply(Read.from(TestUtils.getTestKinesisSource())).
+                apply(KinesisIO.Read.
+                        from(
+                                TestConfiguration.get().getTestKinesisStream(),
+                                InitialPositionInStream.LATEST).
+                        using(getTestKinesisClientProvider())).
                 apply(ParDo.of(new ByteArrayToString()));
 
         return runBqJob(targetTable, options, p, input);
@@ -160,34 +160,57 @@ public class TestUtils {
         return job;
     }
 
-    public static AWSCredentialsProvider getClusterTestAwsCredentialsProvider() {
-        AWSCredentialsProvider provider = getStaticCredentialsProvider(
-                TestConfiguration.get().getClusterAwsAccessKey(),
-                TestConfiguration.get().getClusterAwsSecretKey()
-        );
-        return new STSAssumeRoleSessionCredentialsProvider(
-                provider, TestConfiguration.get().getClusterAwsRoleToAssume(), "session1"
-        );
+    public static void putRecordsWithKinesisProducer(List<String> data) throws TimeoutException {
+        putRecordsWithKinesisProducer(data, Long.MAX_VALUE);
     }
 
-    public static void putRecordsWithKinesisProducer(List<String> data) {
+    public static void putRecordsWithKinesisProducer(List<String> data, long timeout) throws
+            TimeoutException {
+        long startTime = currentTimeMillis();
         List<ListenableFuture<UserRecordResult>> futures = startPuttingRecordsWIthKinesisProducer
                 (data);
 
-        waitForRecordsToBeSentToKinesis(futures);
+        waitForRecordsToBeSentToKinesis(futures, timeout - (currentTimeMillis() - startTime));
     }
 
     public static void waitForRecordsToBeSentToKinesis(List<ListenableFuture<UserRecordResult>>
-                                                               futures) {
+                                                               futures) throws TimeoutException {
+        waitForRecordsToBeSentToKinesis(futures, Long.MAX_VALUE);
+    }
+
+    public static void waitForRecordsToBeSentToKinesis(List<ListenableFuture<UserRecordResult>>
+                                                               futures, long timeout) throws TimeoutException {
+        long startTime = currentTimeMillis();
+
         for (ListenableFuture<UserRecordResult> future : futures) {
             try {
-                UserRecordResult result = future.get();
-                if (!result.isSuccessful()) {
-                    throw new RuntimeException("Failed to send record");
+                long timeLeft = verifyTimeLeft(timeout, startTime);
+                UserRecordResult result = future.get(timeLeft, TimeUnit.MILLISECONDS);
+                verifyResult(result);
+            } catch (ExecutionException e) {
+                if (e.getCause() instanceof UserRecordFailedException) {
+                    verifyResult(((UserRecordFailedException) e.getCause()).getResult());
+                } else {
+                    throw new RuntimeException(e);
                 }
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private static long verifyTimeLeft(long timeout, long startTime) throws TimeoutException {
+        long timeLeft = timeout - (currentTimeMillis() - startTime);
+        if (timeLeft < 0) {
+            throw new TimeoutException();
+        }
+        return timeLeft;
+    }
+
+    private static void verifyResult(UserRecordResult result) {
+        if (!result.isSuccessful()) {
+            throw new RuntimeException("Failed to send record: " + result.getAttempts().get(0)
+                    .getErrorMessage());
         }
     }
 
@@ -195,6 +218,7 @@ public class TestUtils {
     startPuttingRecordsWIthKinesisProducer(List<String> data) {
         KinesisProducer producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
+                        setRateLimit(90).
                         setCredentialsProvider(getTestAwsCredentialsProvider()).
                         setRegion(TestConfiguration.get().getTestRegion())
         );
@@ -209,7 +233,8 @@ public class TestUtils {
         return futures;
     }
 
-    public static void putRecordsOldStyle(List<String> data) {
+    public static void putRecordsOldStyle(List<String> data, long timeout) throws TimeoutException {
+        long startTime = currentTimeMillis();
         List<List<String>> partitions = Lists.partition(data, 499);
 
         AmazonKinesisClient client = new AmazonKinesisClient
@@ -228,6 +253,7 @@ public class TestUtils {
 
             PutRecordsResult result;
             do {
+                verifyTimeLeft(timeout, startTime);
 
                 result = client.putRecords(
                         new PutRecordsRequest().
@@ -248,7 +274,7 @@ public class TestUtils {
         }
     }
 
-    private static TestKinesisClientProvider getTestKinesisClientProvider() {
+    public static TestKinesisClientProvider getTestKinesisClientProvider() {
         return new TestKinesisClientProvider();
     }
 

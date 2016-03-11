@@ -1,5 +1,7 @@
 package utils;
 
+import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
+
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -7,14 +9,11 @@ import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
-import com.amazonaws.services.kinesis.clientlibrary.proxies.IKinesisProxy;
-import com.amazonaws.services.kinesis.clientlibrary.proxies.KinesisProxy;
-import pl.ppastuszka.google.dataflow.kinesis.client.SerializableKinesisProxyFactory;
 
 /***
  *
  */
-public class TestKinesisClientProvider implements SerializableKinesisProxyFactory {
+public class TestKinesisClientProvider implements KinesisClientProvider {
     private static final long serialVersionUID = 0L;
 
     private final String accessKey;
@@ -27,11 +26,6 @@ public class TestKinesisClientProvider implements SerializableKinesisProxyFactor
         secretKey = TestConfiguration.get().getClusterAwsSecretKey();
         region = TestConfiguration.get().getTestRegion();
         roleToAssume = TestConfiguration.get().getClusterAwsRoleToAssume();
-    }
-
-    private AmazonKinesis getKinesisClient(AWSCredentialsProvider provider) {
-        return new AmazonKinesisClient(provider)
-                .withRegion(Regions.fromName(region));
     }
 
     private AWSCredentialsProvider getCredentialsProvider() {
@@ -47,14 +41,8 @@ public class TestKinesisClientProvider implements SerializableKinesisProxyFactor
     }
 
     @Override
-    public IKinesisProxy getProxy(String streamName) {
-        AWSCredentialsProvider credentialsProvider = getCredentialsProvider();
-        return new KinesisProxy(
-                streamName,
-                credentialsProvider,
-                getKinesisClient(credentialsProvider),
-                1000L,
-                50
-        );
+    public AmazonKinesis get() {
+        return new AmazonKinesisClient(getCredentialsProvider())
+                .withRegion(Regions.fromName(region));
     }
 }
