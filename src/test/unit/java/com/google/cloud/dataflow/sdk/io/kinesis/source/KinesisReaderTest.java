@@ -6,7 +6,7 @@ import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.SingleShardChe
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator
         .MultiShardCheckpointGenerator;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
 import com.amazonaws.services.kinesis.model.Record;
@@ -46,8 +46,8 @@ public class KinesisReaderTest {
         ));
         when(firstCheckpoint.getShardRecordsIterator(kinesis)).thenReturn(firstIterator);
         when(secondCheckpoint.getShardRecordsIterator(kinesis)).thenReturn(secondIterator);
-        when(firstIterator.next()).thenReturn(MyOptional.<Record>absent());
-        when(secondIterator.next()).thenReturn(MyOptional.<Record>absent());
+        when(firstIterator.next()).thenReturn(CustomOptional.<Record>absent());
+        when(secondIterator.next()).thenReturn(CustomOptional.<Record>absent());
 
         when(a.getSequenceNumber()).thenReturn("a");
         when(b.getSequenceNumber()).thenReturn("b");
@@ -72,7 +72,7 @@ public class KinesisReaderTest {
     public void startReturnsTrueIfSomeDataAvailable() throws IOException {
         when(firstIterator.next()).
                 thenReturn(Optional.of(a)).
-                thenReturn(MyOptional.<Record>absent());
+                thenReturn(CustomOptional.<Record>absent());
 
         assertThat(reader.start()).isTrue();
     }
@@ -80,17 +80,17 @@ public class KinesisReaderTest {
     @Test
     public void readsThroughAllDataAvailable() throws IOException {
         when(firstIterator.next()).
-                thenReturn(MyOptional.<Record>absent()).
+                thenReturn(CustomOptional.<Record>absent()).
                 thenReturn(Optional.of(a)).
-                thenReturn(MyOptional.<Record>absent()).
+                thenReturn(CustomOptional.<Record>absent()).
                 thenReturn(Optional.of(b)).
-                thenReturn(MyOptional.<Record>absent());
+                thenReturn(CustomOptional.<Record>absent());
 
         when(secondIterator.next()).
                 thenReturn(Optional.of(c)).
-                thenReturn(MyOptional.<Record>absent()).
+                thenReturn(CustomOptional.<Record>absent()).
                 thenReturn(Optional.of(d)).
-                thenReturn(MyOptional.<Record>absent());
+                thenReturn(CustomOptional.<Record>absent());
 
         assertThat(reader.start()).isTrue();
         assertThat(fromBytes(reader.getCurrentRecordId())).isEqualTo("c");

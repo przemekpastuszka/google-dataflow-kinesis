@@ -22,7 +22,7 @@ public class RecordTransformer {
         this.recordsDeaggregator = recordsDeaggregator;
     }
 
-    public List<UserRecord> transform(List<Record> records, SingleShardCheckpoint checkpoint) {
+    public List<? extends Record> transform(List<Record> records, SingleShardCheckpoint checkpoint) {
         List<UserRecord> deaggregatedRecords = recordsDeaggregator.deaggregate(records);
 
         List<UserRecord> filteredRecords = Lists.newArrayList();

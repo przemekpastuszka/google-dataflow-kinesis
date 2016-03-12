@@ -8,9 +8,11 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Lists;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.BigqueryScopes;
+import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableDataList;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.api.services.bigquery.model.TableSchema;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,6 +39,14 @@ public class BQ {
         return Holder.INSTANCE;
     }
 
+    public Table createTable(TableReference reference, TableSchema tableSchema) throws IOException {
+        return bigquery.tables().insert(
+                reference.getProjectId(),
+                reference.getDatasetId(),
+                new Table().setTableReference(reference).setSchema(tableSchema)
+        ).execute();
+    }
+
     public void deleteTableIfExists(TableReference reference) throws IOException {
         try {
             bigquery.tables().delete(
@@ -61,7 +71,9 @@ public class BQ {
                             reference.getTableId()).setPageToken(pageToken).execute();
             pageToken = callResult.getPageToken();
 
-            rows.addAll(callResult.getRows());
+            if (callResult.getRows() != null) {
+                rows.addAll(callResult.getRows());
+            }
         } while (pageToken != null);
 
         List<String> columnValues = Lists.newArrayList();

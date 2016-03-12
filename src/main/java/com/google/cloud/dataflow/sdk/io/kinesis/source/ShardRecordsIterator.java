@@ -6,7 +6,7 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect
         .newArrayDeque;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.SingleShardCheckpoint;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
 import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
@@ -52,11 +52,11 @@ public class ShardRecordsIterator {
         readMoreIfNecessary();
 
         if (data.isEmpty()) {
-            return MyOptional.absent();
+            return CustomOptional.absent();
         } else {
             Record record = data.removeFirst();
             checkpoint = checkpoint.moveAfter(record);
-            return MyOptional.of(record);
+            return CustomOptional.of(record);
         }
     }
 

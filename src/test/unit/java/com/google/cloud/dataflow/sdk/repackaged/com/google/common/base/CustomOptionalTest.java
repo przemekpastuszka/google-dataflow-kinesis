@@ -6,9 +6,9 @@ import java.util.NoSuchElementException;
 /**
  * Created by ppastuszka on 12.12.15.
  */
-public class MyOptionalTest {
+public class CustomOptionalTest {
     @Test(expected = NoSuchElementException.class)
     public void absentThrowsNoSuchElementExceptionOnGet() {
-        MyOptional.absent().get();
+        CustomOptional.absent().get();
     }
 }

@@ -12,7 +12,7 @@ import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator
 import com.google.cloud.dataflow.sdk.io.kinesis.utils.RoundRobin;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.MyOptional;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
 import com.amazonaws.services.kinesis.model.Record;
@@ -34,7 +34,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     private final UnboundedSource<byte[], ?> source;
     private MultiShardCheckpointGenerator initialCheckpointGenerator;
     private RoundRobin<ShardRecordsIterator> shardIterators;
-    private Optional<Record> currentRecord = MyOptional.absent();
+    private Optional<Record> currentRecord = CustomOptional.absent();
 
     public KinesisReader(SimplifiedKinesisClient kinesis,
                          MultiShardCheckpointGenerator initialCheckpointGenerator,

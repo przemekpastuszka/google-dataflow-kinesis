@@ -45,6 +45,7 @@ public class CorrectnessE2ETest {
         job = null;
         testTable = TestUtils.getTestTableReference();
         BQ.get().deleteTableIfExists(testTable);
+        BQ.get().createTable(testTable, TestUtils.getTestTableSchema());
     }
 
     @After
@@ -60,6 +61,7 @@ public class CorrectnessE2ETest {
     }
 
     @Test
+    @Ignore
     public void testSimpleCorrectnessOnDataflowService() throws InterruptedException, IOException, TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
@@ -71,7 +73,6 @@ public class CorrectnessE2ETest {
     }
 
     @Test
-    @Ignore
     public void dealsWithInstanceBeingRestarted() throws InterruptedException, IOException, TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
