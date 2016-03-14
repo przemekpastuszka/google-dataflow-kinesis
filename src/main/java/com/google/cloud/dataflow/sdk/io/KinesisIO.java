@@ -15,6 +15,9 @@ import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionIn
  * Created by ppastuszka on 10.03.16.
  */
 public class KinesisIO {
+    /***
+     *
+     */
     public static class Read {
 
         private final String streamName;

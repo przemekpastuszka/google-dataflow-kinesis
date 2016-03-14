@@ -62,7 +62,8 @@ public class CorrectnessE2ETest {
 
     @Test
     @Ignore
-    public void testSimpleCorrectnessOnDataflowService() throws InterruptedException, IOException, TimeoutException {
+    public void testSimpleCorrectnessOnDataflowService() throws InterruptedException,
+            IOException, TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
 
@@ -73,7 +74,8 @@ public class CorrectnessE2ETest {
     }
 
     @Test
-    public void dealsWithInstanceBeingRestarted() throws InterruptedException, IOException, TimeoutException {
+    public void dealsWithInstanceBeingRestarted() throws InterruptedException, IOException,
+            TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
 

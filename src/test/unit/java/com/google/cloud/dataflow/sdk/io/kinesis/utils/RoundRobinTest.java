@@ -2,8 +2,6 @@ package com.google.cloud.dataflow.sdk.io.kinesis.utils;
 
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.newArrayList;
 
-import com.google.cloud.dataflow.sdk.io.kinesis.utils.RoundRobin;
-
 import static org.fest.assertions.Assertions.assertThat;
 import org.junit.Test;
 import java.util.Collections;

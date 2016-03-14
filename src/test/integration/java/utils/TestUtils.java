@@ -11,8 +11,6 @@ import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.io.BigQueryIO;
 import com.google.cloud.dataflow.sdk.io.KinesisIO;
 import com.google.cloud.dataflow.sdk.io.PubsubIO;
-import com.google.cloud.dataflow.sdk.io.Read;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.KinesisDataflowSource;
 import com.google.cloud.dataflow.sdk.options.DataflowPipelineOptions;
 import com.google.cloud.dataflow.sdk.options.PipelineOptionsFactory;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
@@ -181,7 +179,8 @@ public class TestUtils {
     }
 
     public static void waitForRecordsToBeSentToKinesis(List<ListenableFuture<UserRecordResult>>
-                                                               futures, long timeout) throws TimeoutException {
+                                                               futures, long timeout) throws
+            TimeoutException {
         long startTime = currentTimeMillis();
 
         for (ListenableFuture<UserRecordResult> future : futures) {

@@ -68,7 +68,8 @@ public class ShardRecordsIteratorTest {
         when(secondResult.getRecords()).thenReturn(Collections.<Record>emptyList());
         when(thirdResult.getRecords()).thenReturn(Collections.<Record>emptyList());
 
-        when(recordTransformer.transform(anyListOf(Record.class), any(SingleShardCheckpoint.class))).thenAnswer(new IdentityAnswer());
+        when(recordTransformer.transform(anyListOf(Record.class), any(SingleShardCheckpoint
+                .class))).thenAnswer(new IdentityAnswer());
 
         iterator = new ShardRecordsIterator(firstCheckpoint, kinesisClient, recordTransformer);
     }

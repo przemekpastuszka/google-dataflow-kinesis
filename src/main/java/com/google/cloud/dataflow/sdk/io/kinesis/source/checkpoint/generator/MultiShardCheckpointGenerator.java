@@ -1,10 +1,10 @@
 package com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator;
 
-import java.io.IOException;
-import java.io.Serializable;
-
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.MultiShardCheckpoint;
+
+import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * Created by ppastuszka on 12.12.15.
