@@ -19,36 +19,47 @@ import java.io.IOException;
 import java.io.Serializable;
 
 /***
- *
+ * Checkpoint mark for single shard in the stream.
+ * Current position in the shard is determined by either:
+ * <ul>
+ * <li>{@link #shardIteratorType} if it is equal to {@link ShardIteratorType#LATEST} or
+ *        {@link ShardIteratorType#TRIM_HORIZON}</li>
+ * <li>combination of
+ * {@link #sequenceNumber} and {@link #subSequenceNumber} if
+ *          {@link ShardIteratorType#AFTER_SEQUENCE_NUMBER} or
+ *          {@link ShardIteratorType#AT_SEQUENCE_NUMBER}</li>
+ * </ul>
+ * This class is immutable.
  */
-public class SingleShardCheckpoint implements UnboundedSource.CheckpointMark, Serializable {
+public class ShardCheckpoint implements UnboundedSource.CheckpointMark, Serializable {
     private final String streamName;
     private final String shardId;
     private final String sequenceNumber;
     private final ShardIteratorType shardIteratorType;
     private final long subSequenceNumber;
 
-    public SingleShardCheckpoint(String streamName, String shardId, InitialPositionInStream
+    public ShardCheckpoint(String streamName, String shardId, InitialPositionInStream
             initialPositionInStream) {
 
         this(streamName, shardId, ShardIteratorType.fromValue(initialPositionInStream.name()),
                 null);
     }
 
-    public SingleShardCheckpoint(String streamName, String shardId, ShardIteratorType
+    public ShardCheckpoint(String streamName, String shardId, ShardIteratorType
             shardIteratorType, String sequenceNumber) {
         this(streamName, shardId, shardIteratorType, sequenceNumber, 0L);
     }
 
-    public SingleShardCheckpoint(String streamName, String shardId, ShardIteratorType
+    public ShardCheckpoint(String streamName, String shardId, ShardIteratorType
             shardIteratorType, String sequenceNumber, long subSequenceNumber) {
 
         checkNotNull(streamName);
         checkNotNull(shardId);
         checkNotNull(shardIteratorType);
         if (shardIteratorType == AT_SEQUENCE_NUMBER || shardIteratorType == AFTER_SEQUENCE_NUMBER) {
-            checkNotNull(sequenceNumber, "You must provide sequence number for AT_SEQUENCE_NUMBER" +
-                    " of AFTER_SEQUENCE_NUMBER");
+            checkNotNull(sequenceNumber,
+                    "You must provide sequence number for AT_SEQUENCE_NUMBER" +
+                            " or AFTER_SEQUENCE_NUMBER");
         } else {
             checkArgument(sequenceNumber == null,
                     "Sequence number must be null for LATEST and TRIM_HORIZON");
@@ -61,8 +72,18 @@ public class SingleShardCheckpoint implements UnboundedSource.CheckpointMark, Se
         this.sequenceNumber = sequenceNumber;
     }
 
-    public boolean isBefore(ExtendedSequenceNumber other) {
-        return extendedSequenceNumber().compareTo(other) < 0;
+    /***
+     * Used to compare {@link ShardCheckpoint} object to {@link ExtendedSequenceNumber}.
+     *
+     * @param other
+     * @return if current checkpoint mark points before or at given {@link ExtendedSequenceNumber}
+     */
+    public boolean isBeforeOrAt(ExtendedSequenceNumber other) {
+        int result = extendedSequenceNumber().compareTo(other);
+        if (result == 0) {
+            return shardIteratorType == AT_SEQUENCE_NUMBER;
+        }
+        return result < 0;
     }
 
     private ExtendedSequenceNumber extendedSequenceNumber() {
@@ -95,15 +116,17 @@ public class SingleShardCheckpoint implements UnboundedSource.CheckpointMark, Se
                 sequenceNumber);
     }
 
-    public SingleShardCheckpoint moveAfter(Record record) {
-        if (record instanceof UserRecord) {
-            return new SingleShardCheckpoint(
-                    streamName, shardId,
-                    AFTER_SEQUENCE_NUMBER,
-                    record.getSequenceNumber(),
-                    ((UserRecord) record).getSubSequenceNumber());
-        }
-        return new SingleShardCheckpoint(streamName, shardId,
-                AFTER_SEQUENCE_NUMBER, record.getSequenceNumber());
+    /***
+     * Used to advance checkpoint mark to position after given {@link Record}.
+     *
+     * @param record
+     * @return new checkpoint object pointing directly after given {@link Record}
+     */
+    public ShardCheckpoint moveAfter(UserRecord record) {
+        return new ShardCheckpoint(
+                streamName, shardId,
+                AFTER_SEQUENCE_NUMBER,
+                record.getSequenceNumber(),
+                record.getSubSequenceNumber());
     }
 }

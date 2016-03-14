@@ -1,7 +1,7 @@
 package com.google.cloud.dataflow.sdk.io;
 
 import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.KinesisDataflowSource;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.KinesisSource;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -35,7 +35,7 @@ public class KinesisIO {
         public com.google.cloud.dataflow.sdk.io.Read.Unbounded<byte[]> using
                 (KinesisClientProvider kinesisClientProvider) {
             return com.google.cloud.dataflow.sdk.io.Read.from(
-                    new KinesisDataflowSource(kinesisClientProvider, streamName,
+                    new KinesisSource(kinesisClientProvider, streamName,
                             initialPosition));
         }
 

@@ -5,17 +5,16 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Pr
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.newArrayList;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.MultiShardCheckpoint;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.SingleShardCheckpoint;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator
-        .MultiShardCheckpointGenerator;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StreamCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator.CheckpointGenerator;
 import com.google.cloud.dataflow.sdk.io.kinesis.utils.RoundRobin;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
-import com.amazonaws.services.kinesis.model.Record;
+import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import org.joda.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +31,12 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     private final SimplifiedKinesisClient kinesis;
     private final UnboundedSource<byte[], ?> source;
-    private MultiShardCheckpointGenerator initialCheckpointGenerator;
+    private CheckpointGenerator initialCheckpointGenerator;
     private RoundRobin<ShardRecordsIterator> shardIterators;
-    private Optional<Record> currentRecord = CustomOptional.absent();
+    private Optional<UserRecord> currentRecord = CustomOptional.absent();
 
     public KinesisReader(SimplifiedKinesisClient kinesis,
-                         MultiShardCheckpointGenerator initialCheckpointGenerator,
+                         CheckpointGenerator initialCheckpointGenerator,
                          PipelineOptions options,
                          UnboundedSource<byte[], ?> source) {
         checkNotNull(kinesis);
@@ -52,9 +51,9 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     public boolean start() throws IOException {
         LOG.info("Starting reader using {}", initialCheckpointGenerator);
 
-        MultiShardCheckpoint initialCheckpoint = initialCheckpointGenerator.generate(kinesis);
+        StreamCheckpoint initialCheckpoint = initialCheckpointGenerator.generate(kinesis);
         List<ShardRecordsIterator> iterators = newArrayList();
-        for (SingleShardCheckpoint checkpoint : initialCheckpoint) {
+        for (ShardCheckpoint checkpoint : initialCheckpoint) {
             iterators.add(checkpoint.getShardRecordsIterator(kinesis));
         }
         shardIterators = new RoundRobin<>(iterators);
@@ -101,7 +100,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public UnboundedSource.CheckpointMark getCheckpointMark() {
-        return new MultiShardCheckpoint(shardIterators);
+        return StreamCheckpoint.asCurrentStateOf(shardIterators);
     }
 
     @Override

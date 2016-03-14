@@ -1,15 +1,14 @@
 package com.google.cloud.dataflow.sdk.io.kinesis.source;
 
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.MultiShardCheckpoint;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.SingleShardCheckpoint;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator
-        .MultiShardCheckpointGenerator;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StreamCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator.CheckpointGenerator;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
-import com.amazonaws.services.kinesis.model.Record;
+import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import org.junit.Before;
@@ -29,25 +28,25 @@ public class KinesisReaderTest {
     @Mock
     private SimplifiedKinesisClient kinesis;
     @Mock
-    private MultiShardCheckpointGenerator generator;
+    private CheckpointGenerator generator;
     @Mock
-    private SingleShardCheckpoint firstCheckpoint, secondCheckpoint;
+    private ShardCheckpoint firstCheckpoint, secondCheckpoint;
     @Mock
     private ShardRecordsIterator firstIterator, secondIterator;
     @Mock
-    private Record a, b, c, d;
+    private UserRecord a, b, c, d;
 
     private KinesisReader reader;
 
     @Before
     public void setUp() throws IOException {
-        when(generator.generate(kinesis)).thenReturn(new MultiShardCheckpoint(
+        when(generator.generate(kinesis)).thenReturn(new StreamCheckpoint(
                 asList(firstCheckpoint, secondCheckpoint)
         ));
         when(firstCheckpoint.getShardRecordsIterator(kinesis)).thenReturn(firstIterator);
         when(secondCheckpoint.getShardRecordsIterator(kinesis)).thenReturn(secondIterator);
-        when(firstIterator.next()).thenReturn(CustomOptional.<Record>absent());
-        when(secondIterator.next()).thenReturn(CustomOptional.<Record>absent());
+        when(firstIterator.next()).thenReturn(CustomOptional.<UserRecord>absent());
+        when(secondIterator.next()).thenReturn(CustomOptional.<UserRecord>absent());
 
         when(a.getSequenceNumber()).thenReturn("a");
         when(b.getSequenceNumber()).thenReturn("b");
@@ -72,7 +71,7 @@ public class KinesisReaderTest {
     public void startReturnsTrueIfSomeDataAvailable() throws IOException {
         when(firstIterator.next()).
                 thenReturn(Optional.of(a)).
-                thenReturn(CustomOptional.<Record>absent());
+                thenReturn(CustomOptional.<UserRecord>absent());
 
         assertThat(reader.start()).isTrue();
     }
@@ -80,17 +79,17 @@ public class KinesisReaderTest {
     @Test
     public void readsThroughAllDataAvailable() throws IOException {
         when(firstIterator.next()).
-                thenReturn(CustomOptional.<Record>absent()).
+                thenReturn(CustomOptional.<UserRecord>absent()).
                 thenReturn(Optional.of(a)).
-                thenReturn(CustomOptional.<Record>absent()).
+                thenReturn(CustomOptional.<UserRecord>absent()).
                 thenReturn(Optional.of(b)).
-                thenReturn(CustomOptional.<Record>absent());
+                thenReturn(CustomOptional.<UserRecord>absent());
 
         when(secondIterator.next()).
                 thenReturn(Optional.of(c)).
-                thenReturn(CustomOptional.<Record>absent()).
+                thenReturn(CustomOptional.<UserRecord>absent()).
                 thenReturn(Optional.of(d)).
-                thenReturn(CustomOptional.<Record>absent());
+                thenReturn(CustomOptional.<UserRecord>absent());
 
         assertThat(reader.start()).isTrue();
         assertThat(fromBytes(reader.getCurrentRecordId())).isEqualTo("c");

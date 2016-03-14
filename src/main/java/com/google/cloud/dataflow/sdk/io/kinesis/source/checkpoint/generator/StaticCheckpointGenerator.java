@@ -3,21 +3,21 @@ package com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator;
 import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.MultiShardCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StreamCheckpoint;
 
 /**
- * Created by ppastuszka on 12.12.15.
+ * Always returns the same instance of checkpoint.
  */
-public class StaticMultiShardCheckpointGenerator implements MultiShardCheckpointGenerator {
-    private final MultiShardCheckpoint checkpoint;
+public class StaticCheckpointGenerator implements CheckpointGenerator {
+    private final StreamCheckpoint checkpoint;
 
-    public StaticMultiShardCheckpointGenerator(MultiShardCheckpoint checkpoint) {
+    public StaticCheckpointGenerator(StreamCheckpoint checkpoint) {
         checkNotNull(checkpoint);
         this.checkpoint = checkpoint;
     }
 
     @Override
-    public MultiShardCheckpoint generate(SimplifiedKinesisClient client) {
+    public StreamCheckpoint generate(SimplifiedKinesisClient client) {
         return checkpoint;
     }
 

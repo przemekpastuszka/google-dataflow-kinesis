@@ -5,13 +5,12 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Pr
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues
         .newArrayDeque;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.SingleShardCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
+import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
-import com.amazonaws.services.kinesis.model.GetRecordsResult;
-import com.amazonaws.services.kinesis.model.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -25,17 +24,17 @@ public class ShardRecordsIterator {
 
     private final SimplifiedKinesisClient kinesis;
     private final RecordTransformer transformer;
-    private SingleShardCheckpoint checkpoint;
+    private ShardCheckpoint checkpoint;
     private String shardIterator;
-    private Deque<Record> data = newArrayDeque();
+    private Deque<UserRecord> data = newArrayDeque();
 
-    public ShardRecordsIterator(final SingleShardCheckpoint initialCheckpoint,
+    public ShardRecordsIterator(final ShardCheckpoint initialCheckpoint,
                                 SimplifiedKinesisClient simplifiedKinesisClient) throws
             IOException {
         this(initialCheckpoint, simplifiedKinesisClient, new RecordTransformer());
     }
 
-    public ShardRecordsIterator(final SingleShardCheckpoint initialCheckpoint,
+    public ShardRecordsIterator(final ShardCheckpoint initialCheckpoint,
                                 SimplifiedKinesisClient simplifiedKinesisClient,
                                 RecordTransformer transformer) throws
             IOException {
@@ -48,13 +47,13 @@ public class ShardRecordsIterator {
         shardIterator = checkpoint.getShardIterator(kinesis);
     }
 
-    public Optional<Record> next() throws IOException {
+    public Optional<UserRecord> next() throws IOException {
         readMoreIfNecessary();
 
         if (data.isEmpty()) {
             return CustomOptional.absent();
         } else {
-            Record record = data.removeFirst();
+            UserRecord record = data.removeFirst();
             checkpoint = checkpoint.moveAfter(record);
             return CustomOptional.of(record);
         }
@@ -62,7 +61,7 @@ public class ShardRecordsIterator {
 
     private void readMoreIfNecessary() throws IOException {
         if (data.isEmpty()) {
-            GetRecordsResult response;
+            SimplifiedKinesisClient.RecordsResult response;
             try {
                 response = kinesis.getRecords(shardIterator);
             } catch (ExpiredIteratorException e) {
@@ -72,13 +71,11 @@ public class ShardRecordsIterator {
             }
             LOG.debug("Fetched {} new records", response.getRecords().size());
             shardIterator = response.getNextShardIterator();
-            if (response.getRecords().size() > 0) {
-                data.addAll(transformer.transform(response.getRecords(), checkpoint));
-            }
+            data.addAll(transformer.transform(response.getRecords(), checkpoint));
         }
     }
 
-    public SingleShardCheckpoint getCheckpoint() {
+    public ShardCheckpoint getCheckpoint() {
         return checkpoint;
     }
 

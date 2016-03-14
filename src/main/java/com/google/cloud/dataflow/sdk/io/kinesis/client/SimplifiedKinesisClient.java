@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
 import com.amazonaws.services.kinesis.model.GetRecordsRequest;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
@@ -19,7 +20,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 /***
- *
+ * Wraps {@link AmazonKinesis} class providing much simpler interface and
+ * proper error handling.
  */
 public class SimplifiedKinesisClient {
     private static final Logger LOG = LoggerFactory.getLogger(SimplifiedKinesisClient.class);
@@ -68,18 +70,21 @@ public class SimplifiedKinesisClient {
         });
     }
 
-    public GetRecordsResult getRecords(String shardIterator) throws IOException {
+    public RecordsResult getRecords(String shardIterator) throws IOException {
         return getRecords(shardIterator, null);
     }
 
-    public GetRecordsResult getRecords(final String shardIterator, final Integer limit) throws
+    public RecordsResult getRecords(final String shardIterator, final Integer limit) throws
             IOException {
-        return wrapExceptions(new Callable<GetRecordsResult>() {
+        return wrapExceptions(new Callable<RecordsResult>() {
             @Override
-            public GetRecordsResult call() throws Exception {
-                return kinesis.getRecords(new GetRecordsRequest()
+            public RecordsResult call() throws Exception {
+                GetRecordsResult response = kinesis.getRecords(new GetRecordsRequest()
                         .withShardIterator(shardIterator)
                         .withLimit(limit));
+                return new RecordsResult(
+                        UserRecord.deaggregate(response.getRecords()),
+                        response.getNextShardIterator());
             }
         });
     }
@@ -102,6 +107,27 @@ public class SimplifiedKinesisClient {
         } catch (Exception e) {
             LOG.error("Unknown failure", e);
             throw new RuntimeException(e);
+        }
+    }
+
+    /***
+     *
+     */
+    public static class RecordsResult {
+        private final List<UserRecord> records;
+        private final String nextShardIterator;
+
+        public RecordsResult(List<UserRecord> records, String nextShardIterator) {
+            this.records = records;
+            this.nextShardIterator = nextShardIterator;
+        }
+
+        public List<UserRecord> getRecords() {
+            return records;
+        }
+
+        public String getNextShardIterator() {
+            return nextShardIterator;
         }
     }
 }

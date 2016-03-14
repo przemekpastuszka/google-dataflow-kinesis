@@ -1,13 +1,12 @@
 package com.google.cloud.dataflow.sdk.io.kinesis.source;
 
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.SingleShardCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
+import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
-import com.amazonaws.services.kinesis.model.GetRecordsResult;
-import com.amazonaws.services.kinesis.model.Record;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
@@ -36,12 +35,12 @@ public class ShardRecordsIteratorTest {
     @Mock
     private SimplifiedKinesisClient kinesisClient;
     @Mock
-    private SingleShardCheckpoint firstCheckpoint, aCheckpoint, bCheckpoint, cCheckpoint,
+    private ShardCheckpoint firstCheckpoint, aCheckpoint, bCheckpoint, cCheckpoint,
             dCheckpoint;
     @Mock
-    private GetRecordsResult firstResult, secondResult, thirdResult;
+    private SimplifiedKinesisClient.RecordsResult firstResult, secondResult, thirdResult;
     @Mock
-    private Record a, b, c, d;
+    private UserRecord a, b, c, d;
     @Mock
     private RecordTransformer recordTransformer;
 
@@ -64,11 +63,11 @@ public class ShardRecordsIteratorTest {
         when(secondResult.getNextShardIterator()).thenReturn(THIRD_ITERATOR);
         when(thirdResult.getNextShardIterator()).thenReturn(THIRD_ITERATOR);
 
-        when(firstResult.getRecords()).thenReturn(Collections.<Record>emptyList());
-        when(secondResult.getRecords()).thenReturn(Collections.<Record>emptyList());
-        when(thirdResult.getRecords()).thenReturn(Collections.<Record>emptyList());
+        when(firstResult.getRecords()).thenReturn(Collections.<UserRecord>emptyList());
+        when(secondResult.getRecords()).thenReturn(Collections.<UserRecord>emptyList());
+        when(thirdResult.getRecords()).thenReturn(Collections.<UserRecord>emptyList());
 
-        when(recordTransformer.transform(anyListOf(Record.class), any(SingleShardCheckpoint
+        when(recordTransformer.transform(anyListOf(UserRecord.class), any(ShardCheckpoint
                 .class))).thenAnswer(new IdentityAnswer());
 
         iterator = new ShardRecordsIterator(firstCheckpoint, kinesisClient, recordTransformer);
