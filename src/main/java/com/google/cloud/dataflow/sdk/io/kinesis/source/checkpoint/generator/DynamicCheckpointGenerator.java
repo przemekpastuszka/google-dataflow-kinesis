@@ -4,8 +4,8 @@ import static com.google.api.client.repackaged.com.google.common.base.Preconditi
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Iterables
         .transform;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StreamCheckpoint;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Function;
 
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
@@ -13,7 +13,7 @@ import com.amazonaws.services.kinesis.model.Shard;
 import java.io.IOException;
 
 /**
- * Creates {@link StreamCheckpoint}, which spans over all shards in given stream.
+ * Creates {@link KinesisReaderCheckpoint}, which spans over all shards in given stream.
  * List of shards is obtained dynamically on call to {@link #generate(SimplifiedKinesisClient)}.
  */
 public class DynamicCheckpointGenerator implements CheckpointGenerator {
@@ -29,8 +29,8 @@ public class DynamicCheckpointGenerator implements CheckpointGenerator {
     }
 
     @Override
-    public StreamCheckpoint generate(SimplifiedKinesisClient kinesis) throws IOException {
-        return new StreamCheckpoint(
+    public KinesisReaderCheckpoint generate(SimplifiedKinesisClient kinesis) throws IOException {
+        return new KinesisReaderCheckpoint(
                 transform(kinesis.listShards(streamName), new Function<Shard, ShardCheckpoint>() {
                     @Override
                     public ShardCheckpoint apply(Shard shard) {

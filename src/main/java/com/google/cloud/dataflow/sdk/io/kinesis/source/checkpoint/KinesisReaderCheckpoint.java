@@ -17,20 +17,22 @@ import javax.annotation.Nullable;
 
 /***
  * Checkpoint representing a total progress in a set of shards in single stream.
- * The set of shards covered by {@link StreamCheckpoint} may or may not be equal to set of all
+ * The set of shards covered by {@link KinesisReaderCheckpoint} may or may not be equal to set of
+ * all
  * shards present in the stream.
  * This class is immutable.
  */
-public class StreamCheckpoint implements Iterable<ShardCheckpoint>, UnboundedSource
+public class KinesisReaderCheckpoint implements Iterable<ShardCheckpoint>, UnboundedSource
         .CheckpointMark, Serializable {
     private final List<ShardCheckpoint> shardCheckpoints;
 
-    public StreamCheckpoint(Iterable<ShardCheckpoint> shardCheckpoints) {
+    public KinesisReaderCheckpoint(Iterable<ShardCheckpoint> shardCheckpoints) {
         this.shardCheckpoints = ImmutableList.copyOf(shardCheckpoints);
     }
 
-    public static StreamCheckpoint asCurrentStateOf(Iterable<ShardRecordsIterator> iterators) {
-        return new StreamCheckpoint(transform(iterators,
+    public static KinesisReaderCheckpoint asCurrentStateOf(Iterable<ShardRecordsIterator>
+                                                                   iterators) {
+        return new KinesisReaderCheckpoint(transform(iterators,
                 new Function<ShardRecordsIterator, ShardCheckpoint>() {
 
                     @Nullable
@@ -49,14 +51,14 @@ public class StreamCheckpoint implements Iterable<ShardCheckpoint>, UnboundedSou
      * @param desiredNumSplits - upper limit for number of partitions to generate.
      * @return list of checkpoints covering consecutive partitions of current checkpoint.
      */
-    public List<StreamCheckpoint> splitInto(int desiredNumSplits) {
+    public List<KinesisReaderCheckpoint> splitInto(int desiredNumSplits) {
         int partitionSize = divideAndRoundUp(shardCheckpoints.size(), desiredNumSplits);
 
-        List<StreamCheckpoint> streamCheckpoints = newArrayList();
+        List<KinesisReaderCheckpoint> checkpoints = newArrayList();
         for (List<ShardCheckpoint> shardPartition : partition(shardCheckpoints, partitionSize)) {
-            streamCheckpoints.add(new StreamCheckpoint(shardPartition));
+            checkpoints.add(new KinesisReaderCheckpoint(shardPartition));
         }
-        return streamCheckpoints;
+        return checkpoints;
     }
 
     private int divideAndRoundUp(int nominator, int denominator) {

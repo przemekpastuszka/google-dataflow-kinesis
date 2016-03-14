@@ -16,15 +16,15 @@ import java.util.List;
  *
  */
 @RunWith(MockitoJUnitRunner.class)
-public class StreamCheckpointTest {
+public class KinesisReaderCheckpointTest {
     @Mock
     private ShardCheckpoint a, b, c;
 
-    private StreamCheckpoint checkpoint;
+    private KinesisReaderCheckpoint checkpoint;
 
     @Before
     public void setUp() {
-        checkpoint = new StreamCheckpoint(asList(a, b, c));
+        checkpoint = new KinesisReaderCheckpoint(asList(a, b, c));
     }
 
     @Test
@@ -42,7 +42,7 @@ public class StreamCheckpointTest {
     }
 
     private void verifySplitInto(int size) {
-        List<StreamCheckpoint> split = checkpoint.splitInto(size);
+        List<KinesisReaderCheckpoint> split = checkpoint.splitInto(size);
         assertThat(Iterables.concat(split)).containsOnly(a, b, c);
         assertThat(split).hasSize(Math.min(size, 3));
     }

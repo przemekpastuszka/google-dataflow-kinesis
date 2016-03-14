@@ -4,7 +4,6 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Pr
         .checkArgument;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
         .checkNotNull;
-import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.ShardRecordsIterator;
 
@@ -16,22 +15,21 @@ import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import com.amazonaws.services.kinesis.model.Record;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import java.io.IOException;
-import java.io.Serializable;
 
 /***
  * Checkpoint mark for single shard in the stream.
  * Current position in the shard is determined by either:
  * <ul>
  * <li>{@link #shardIteratorType} if it is equal to {@link ShardIteratorType#LATEST} or
- *        {@link ShardIteratorType#TRIM_HORIZON}</li>
+ * {@link ShardIteratorType#TRIM_HORIZON}</li>
  * <li>combination of
  * {@link #sequenceNumber} and {@link #subSequenceNumber} if
- *          {@link ShardIteratorType#AFTER_SEQUENCE_NUMBER} or
- *          {@link ShardIteratorType#AT_SEQUENCE_NUMBER}</li>
+ * {@link ShardIteratorType#AFTER_SEQUENCE_NUMBER} or
+ * {@link ShardIteratorType#AT_SEQUENCE_NUMBER}</li>
  * </ul>
  * This class is immutable.
  */
-public class ShardCheckpoint implements UnboundedSource.CheckpointMark, Serializable {
+public class ShardCheckpoint {
     private final String streamName;
     private final String shardId;
     private final String sequenceNumber;
@@ -103,11 +101,6 @@ public class ShardCheckpoint implements UnboundedSource.CheckpointMark, Serializ
     public ShardRecordsIterator getShardRecordsIterator(SimplifiedKinesisClient kinesis)
             throws IOException {
         return new ShardRecordsIterator(this, kinesis);
-    }
-
-    @Override
-    public void finalizeCheckpoint() throws IOException {
-
     }
 
     public String getShardIterator(SimplifiedKinesisClient kinesisClient) throws IOException {

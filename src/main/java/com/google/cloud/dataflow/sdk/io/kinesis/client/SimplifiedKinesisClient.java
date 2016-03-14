@@ -1,5 +1,6 @@
 package com.google.cloud.dataflow.sdk.io.kinesis.client;
 
+import com.google.cloud.dataflow.sdk.io.kinesis.client.response.GetKinesisRecordsResult;
 import com.google.common.collect.Lists;
 
 import com.amazonaws.AmazonServiceException;
@@ -70,19 +71,20 @@ public class SimplifiedKinesisClient {
         });
     }
 
-    public RecordsResult getRecords(String shardIterator) throws IOException {
+    public GetKinesisRecordsResult getRecords(String shardIterator) throws IOException {
         return getRecords(shardIterator, null);
     }
 
-    public RecordsResult getRecords(final String shardIterator, final Integer limit) throws
+    public GetKinesisRecordsResult getRecords(final String shardIterator, final Integer limit)
+            throws
             IOException {
-        return wrapExceptions(new Callable<RecordsResult>() {
+        return wrapExceptions(new Callable<GetKinesisRecordsResult>() {
             @Override
-            public RecordsResult call() throws Exception {
+            public GetKinesisRecordsResult call() throws Exception {
                 GetRecordsResult response = kinesis.getRecords(new GetRecordsRequest()
                         .withShardIterator(shardIterator)
                         .withLimit(limit));
-                return new RecordsResult(
+                return new GetKinesisRecordsResult(
                         UserRecord.deaggregate(response.getRecords()),
                         response.getNextShardIterator());
             }
@@ -110,24 +112,4 @@ public class SimplifiedKinesisClient {
         }
     }
 
-    /***
-     *
-     */
-    public static class RecordsResult {
-        private final List<UserRecord> records;
-        private final String nextShardIterator;
-
-        public RecordsResult(List<UserRecord> records, String nextShardIterator) {
-            this.records = records;
-            this.nextShardIterator = nextShardIterator;
-        }
-
-        public List<UserRecord> getRecords() {
-            return records;
-        }
-
-        public String getNextShardIterator() {
-            return nextShardIterator;
-        }
-    }
 }

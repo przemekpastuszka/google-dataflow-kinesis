@@ -9,7 +9,7 @@ import com.google.cloud.dataflow.sdk.coders.SerializableCoder;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StreamCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator.CheckpointGenerator;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator
         .DynamicCheckpointGenerator;
@@ -26,7 +26,7 @@ import java.util.List;
 /***
  *
  */
-public class KinesisSource extends UnboundedSource<byte[], StreamCheckpoint> {
+public class KinesisSource extends UnboundedSource<byte[], KinesisReaderCheckpoint> {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisSource.class);
 
     private final KinesisClientProvider kinesis;
@@ -34,8 +34,7 @@ public class KinesisSource extends UnboundedSource<byte[], StreamCheckpoint> {
 
     public KinesisSource(KinesisClientProvider kinesis, String streamName,
                          InitialPositionInStream initialPositionInStream) {
-        this(kinesis,
-                new DynamicCheckpointGenerator(streamName, initialPositionInStream));
+        this(kinesis, new DynamicCheckpointGenerator(streamName, initialPositionInStream));
     }
 
     KinesisSource(KinesisClientProvider kinesisClientProvider,
@@ -48,23 +47,22 @@ public class KinesisSource extends UnboundedSource<byte[], StreamCheckpoint> {
     @Override
     public List<KinesisSource> generateInitialSplits(int desiredNumSplits,
                                                      PipelineOptions options) throws Exception {
-        StreamCheckpoint streamCheckpoint =
+        KinesisReaderCheckpoint checkpoint =
                 initialCheckpointGenerator.generate(SimplifiedKinesisClient.from(kinesis));
 
         List<KinesisSource> sources = newArrayList();
 
-        for (StreamCheckpoint partition : streamCheckpoint.splitInto(desiredNumSplits)) {
-            sources.add(
-                    new KinesisSource(
-                            kinesis,
-                            new StaticCheckpointGenerator(partition)));
+        for (KinesisReaderCheckpoint partition : checkpoint.splitInto(desiredNumSplits)) {
+            sources.add(new KinesisSource(
+                    kinesis,
+                    new StaticCheckpointGenerator(partition)));
         }
         return sources;
     }
 
     @Override
     public UnboundedReader<byte[]> createReader(PipelineOptions options,
-                                                StreamCheckpoint checkpointMark) {
+                                                KinesisReaderCheckpoint checkpointMark) {
 
         CheckpointGenerator checkpointGenerator = initialCheckpointGenerator;
 
@@ -74,14 +72,15 @@ public class KinesisSource extends UnboundedSource<byte[], StreamCheckpoint> {
 
         LOG.info("Creating new reader using {}", checkpointGenerator);
 
-        return new KinesisReader(SimplifiedKinesisClient.from(kinesis),
+        return new KinesisReader(
+                SimplifiedKinesisClient.from(kinesis),
                 checkpointGenerator,
-                options, this);
+                this);
     }
 
     @Override
-    public Coder<StreamCheckpoint> getCheckpointMarkCoder() {
-        return SerializableCoder.of(StreamCheckpoint.class);
+    public Coder<KinesisReaderCheckpoint> getCheckpointMarkCoder() {
+        return SerializableCoder.of(KinesisReaderCheckpoint.class);
     }
 
     @Override

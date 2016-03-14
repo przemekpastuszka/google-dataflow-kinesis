@@ -5,16 +5,14 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Pr
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.newArrayList;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StreamCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator.CheckpointGenerator;
 import com.google.cloud.dataflow.sdk.io.kinesis.utils.RoundRobin;
-import com.google.cloud.dataflow.sdk.options.PipelineOptions;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
-import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import org.joda.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,18 +24,17 @@ import java.util.NoSuchElementException;
 /***
  *
  */
-public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
+class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisReader.class);
 
     private final SimplifiedKinesisClient kinesis;
     private final UnboundedSource<byte[], ?> source;
     private CheckpointGenerator initialCheckpointGenerator;
     private RoundRobin<ShardRecordsIterator> shardIterators;
-    private Optional<UserRecord> currentRecord = CustomOptional.absent();
+    private Optional<KinesisRecord> currentRecord = CustomOptional.absent();
 
     public KinesisReader(SimplifiedKinesisClient kinesis,
                          CheckpointGenerator initialCheckpointGenerator,
-                         PipelineOptions options,
                          UnboundedSource<byte[], ?> source) {
         checkNotNull(kinesis);
         checkNotNull(initialCheckpointGenerator);
@@ -51,7 +48,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     public boolean start() throws IOException {
         LOG.info("Starting reader using {}", initialCheckpointGenerator);
 
-        StreamCheckpoint initialCheckpoint = initialCheckpointGenerator.generate(kinesis);
+        KinesisReaderCheckpoint initialCheckpoint = initialCheckpointGenerator.generate(kinesis);
         List<ShardRecordsIterator> iterators = newArrayList();
         for (ShardCheckpoint checkpoint : initialCheckpoint) {
             iterators.add(checkpoint.getShardRecordsIterator(kinesis));
@@ -76,7 +73,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public byte[] getCurrentRecordId() throws NoSuchElementException {
-        return currentRecord.get().getSequenceNumber().getBytes(Charsets.UTF_8);
+        return currentRecord.get().getId();
     }
 
     @Override
@@ -100,7 +97,7 @@ public class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public UnboundedSource.CheckpointMark getCheckpointMark() {
-        return StreamCheckpoint.asCurrentStateOf(shardIterators);
+        return KinesisReaderCheckpoint.asCurrentStateOf(shardIterators);
     }
 
     @Override

@@ -5,11 +5,12 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Pr
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues
         .newArrayDeque;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.response.GetKinesisRecordsResult;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
-import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,20 +24,20 @@ public class ShardRecordsIterator {
     private static final Logger LOG = LoggerFactory.getLogger(ShardRecordsIterator.class);
 
     private final SimplifiedKinesisClient kinesis;
-    private final RecordTransformer transformer;
+    private final RecordFilter transformer;
     private ShardCheckpoint checkpoint;
     private String shardIterator;
-    private Deque<UserRecord> data = newArrayDeque();
+    private Deque<KinesisRecord> data = newArrayDeque();
 
     public ShardRecordsIterator(final ShardCheckpoint initialCheckpoint,
                                 SimplifiedKinesisClient simplifiedKinesisClient) throws
             IOException {
-        this(initialCheckpoint, simplifiedKinesisClient, new RecordTransformer());
+        this(initialCheckpoint, simplifiedKinesisClient, new RecordFilter());
     }
 
     public ShardRecordsIterator(final ShardCheckpoint initialCheckpoint,
                                 SimplifiedKinesisClient simplifiedKinesisClient,
-                                RecordTransformer transformer) throws
+                                RecordFilter transformer) throws
             IOException {
         checkNotNull(initialCheckpoint);
         checkNotNull(simplifiedKinesisClient);
@@ -47,13 +48,13 @@ public class ShardRecordsIterator {
         shardIterator = checkpoint.getShardIterator(kinesis);
     }
 
-    public Optional<UserRecord> next() throws IOException {
+    public Optional<KinesisRecord> next() throws IOException {
         readMoreIfNecessary();
 
         if (data.isEmpty()) {
             return CustomOptional.absent();
         } else {
-            UserRecord record = data.removeFirst();
+            KinesisRecord record = data.removeFirst();
             checkpoint = checkpoint.moveAfter(record);
             return CustomOptional.of(record);
         }
@@ -61,7 +62,7 @@ public class ShardRecordsIterator {
 
     private void readMoreIfNecessary() throws IOException {
         if (data.isEmpty()) {
-            SimplifiedKinesisClient.RecordsResult response;
+            GetKinesisRecordsResult response;
             try {
                 response = kinesis.getRecords(shardIterator);
             } catch (ExpiredIteratorException e) {
