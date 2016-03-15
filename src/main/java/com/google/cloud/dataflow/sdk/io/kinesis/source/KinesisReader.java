@@ -22,16 +22,17 @@ import java.util.NoSuchElementException;
 
 
 /***
- *
+ * Reads data from multiple kinesis shards in a single thread.
  */
 class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisReader.class);
 
     private final SimplifiedKinesisClient kinesis;
     private final UnboundedSource<byte[], ?> source;
-    private CheckpointGenerator initialCheckpointGenerator;
+    private final CheckpointGenerator initialCheckpointGenerator;
     private RoundRobin<ShardRecordsIterator> shardIterators;
     private Optional<KinesisRecord> currentRecord = CustomOptional.absent();
+    private Optional<Instant> currendRecordTimestamp = CustomOptional.absent();
 
     public KinesisReader(SimplifiedKinesisClient kinesis,
                          CheckpointGenerator initialCheckpointGenerator,
@@ -44,6 +45,9 @@ class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
         this.initialCheckpointGenerator = initialCheckpointGenerator;
     }
 
+    /***
+     * Generates initial checkpoint and instantiates iterators for shards.
+     */
     @Override
     public boolean start() throws IOException {
         LOG.info("Starting reader using {}", initialCheckpointGenerator);
@@ -58,11 +62,17 @@ class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
         return advance();
     }
 
+    /***
+     * Moves to the next record in one of the shards.
+     * If current shard iterator can be move forward (i.e. there's a record present) then we do it.
+     * If not, we iterate over shards in a round-robin manner.
+     */
     @Override
     public boolean advance() throws IOException {
         for (int i = 0; i < shardIterators.size(); ++i) {
             currentRecord = shardIterators.getCurrent().next();
             if (currentRecord.isPresent()) {
+                currendRecordTimestamp = Optional.of(Instant.now());
                 return true;
             } else {
                 shardIterators.moveForward();
@@ -73,7 +83,7 @@ class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     @Override
     public byte[] getCurrentRecordId() throws NoSuchElementException {
-        return currentRecord.get().getId();
+        return currentRecord.get().getUniqueId();
     }
 
     @Override
@@ -81,15 +91,27 @@ class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
         return currentRecord.get().getData().array();
     }
 
+    /***
+     * When {@link KinesisReader} was advanced to the current record.
+     * We cannot use approximate arrival timestamp given for each record by Kinesis as it
+     * is not guaranteed to be accurate - this could lead to mark some records as "late"
+     * even if they were not.
+     */
     @Override
     public Instant getCurrentTimestamp() throws NoSuchElementException {
-        return Instant.now();
+        return currendRecordTimestamp.get();
     }
 
     @Override
     public void close() throws IOException {
     }
 
+    /***
+     * Current time.
+     * We cannot give better approximation of the watermark with current semantics of
+     * {@link KinesisReader#getCurrentTimestamp()}, because we don't know when the next
+     * {@link KinesisReader#advance()} will be called.
+     */
     @Override
     public Instant getWatermark() {
         return Instant.now();

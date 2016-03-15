@@ -61,7 +61,6 @@ public class CorrectnessE2ETest {
     }
 
     @Test
-    @Ignore
     public void testSimpleCorrectnessOnDataflowService() throws InterruptedException,
             IOException, TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
@@ -81,13 +80,13 @@ public class CorrectnessE2ETest {
 
         List<String> testData = TestUtils.randomStrings(40000);
         List<ListenableFuture<UserRecordResult>> futures = TestUtils
-                .startPuttingRecordsWIthKinesisProducer(testData);
+                .startPuttingRecordsWithKinesisProducer(testData);
         Instance randomInstance = chooseRandomInstance();
         GCE.get().stopInstance(randomInstance);
         TestUtils.waitForRecordsToBeSentToKinesis(futures);
 
         List<String> newTestData = TestUtils.randomStrings(40000);
-        futures = TestUtils.startPuttingRecordsWIthKinesisProducer(newTestData);
+        futures = TestUtils.startPuttingRecordsWithKinesisProducer(newTestData);
         testData.addAll(newTestData);
         GCE.get().startInstance(randomInstance);
         TestUtils.waitForRecordsToBeSentToKinesis(futures);
@@ -97,7 +96,7 @@ public class CorrectnessE2ETest {
 
     @Test
     @Ignore
-    public void dealsWithInstanceBeingRestartedonPubSub() throws InterruptedException,
+    public void dealsWithInstanceBeingRestartedOnPubSub() throws InterruptedException,
             IOException, ExecutionException {
         job = TestUtils.runPubSubToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");

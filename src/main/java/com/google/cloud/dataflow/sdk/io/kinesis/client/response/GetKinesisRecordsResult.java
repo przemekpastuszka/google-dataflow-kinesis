@@ -19,6 +19,7 @@ public class GetKinesisRecordsResult {
             @Nullable
             @Override
             public KinesisRecord apply(@Nullable UserRecord input) {
+                assert input != null;  // to make FindBugs happy
                 return new KinesisRecord(input);
             }
         });

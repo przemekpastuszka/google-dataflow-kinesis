@@ -71,10 +71,22 @@ public class SimplifiedKinesisClient {
         });
     }
 
+    /***
+     * Gets records from Kinesis and deaggregates them if needed.
+     *
+     * @return list of deaggregated records
+     * @throws IOException - in case of recoverable situation
+     */
     public GetKinesisRecordsResult getRecords(String shardIterator) throws IOException {
         return getRecords(shardIterator, null);
     }
 
+    /***
+     * Gets records from Kinesis and deaggregates them if needed.
+     *
+     * @return list of deaggregated records
+     * @throws IOException - in case of recoverable situation
+     */
     public GetKinesisRecordsResult getRecords(final String shardIterator, final Integer limit)
             throws
             IOException {
@@ -91,6 +103,14 @@ public class SimplifiedKinesisClient {
         });
     }
 
+    /***
+     * Wraps Amazon specific exceptions into more friendly format.
+     *
+     * @throws IOException - in case of recoverable situation, i.e.
+     *     the request rate is too high, Kinesis remote service failed, network issue, etc.
+     * @throws ExpiredIteratorException - if iterator needs to be refreshed
+     * @throws RuntimeException - in all other cases
+     */
     private <T> T wrapExceptions(Callable<T> callable) throws IOException {
         try {
             return callable.call();

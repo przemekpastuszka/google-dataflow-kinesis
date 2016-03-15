@@ -8,7 +8,7 @@ import java.util.Deque;
 import java.util.Iterator;
 
 /***
- *
+ * Very simple implementation of round robin algorithm.
  */
 public class RoundRobin<T> implements Iterable<T> {
     private final Deque<T> deque;

@@ -8,7 +8,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 /***
- *
+ * Same as {@link Optional}, but throws {@link NoSuchElementException} for missing element.
  */
 @GwtCompatible
 public class AbsentWithNoSuchElement<T> extends Optional<T> {

@@ -1,8 +1,8 @@
 package com.google.cloud.dataflow.sdk.io.kinesis.source;
 
+import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.GetKinesisRecordsResult;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
-import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
@@ -68,7 +68,7 @@ public class ShardRecordsIteratorTest {
         when(secondResult.getRecords()).thenReturn(Collections.<KinesisRecord>emptyList());
         when(thirdResult.getRecords()).thenReturn(Collections.<KinesisRecord>emptyList());
 
-        when(recordFilter.transform(anyListOf(KinesisRecord.class), any(ShardCheckpoint
+        when(recordFilter.apply(anyListOf(KinesisRecord.class), any(ShardCheckpoint
                 .class))).thenAnswer(new IdentityAnswer());
 
         iterator = new ShardRecordsIterator(firstCheckpoint, kinesisClient, recordFilter);

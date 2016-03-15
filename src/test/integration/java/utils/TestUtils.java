@@ -167,7 +167,7 @@ public class TestUtils {
     public static void putRecordsWithKinesisProducer(List<String> data, long timeout) throws
             TimeoutException {
         long startTime = currentTimeMillis();
-        List<ListenableFuture<UserRecordResult>> futures = startPuttingRecordsWIthKinesisProducer
+        List<ListenableFuture<UserRecordResult>> futures = startPuttingRecordsWithKinesisProducer
                 (data);
 
         waitForRecordsToBeSentToKinesis(futures, timeout - (currentTimeMillis() - startTime));
@@ -216,7 +216,7 @@ public class TestUtils {
     }
 
     public static List<ListenableFuture<UserRecordResult>>
-    startPuttingRecordsWIthKinesisProducer(List<String> data) {
+    startPuttingRecordsWithKinesisProducer(List<String> data) {
         KinesisProducer producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
                         setRateLimit(90).

@@ -15,6 +15,7 @@ import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import com.amazonaws.services.kinesis.model.Record;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import java.io.IOException;
+import java.io.Serializable;
 
 /***
  * Checkpoint mark for single shard in the stream.
@@ -29,7 +30,7 @@ import java.io.IOException;
  * </ul>
  * This class is immutable.
  */
-public class ShardCheckpoint {
+public class ShardCheckpoint implements Serializable {
     private final String streamName;
     private final String shardId;
     private final String sequenceNumber;

@@ -6,7 +6,7 @@ import com.amazonaws.services.kinesis.clientlibrary.types.ExtendedSequenceNumber
 import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 
 /**
- * Created by ppastuszka on 14.03.16.
+ * {@link UserRecord} enhanced with utility methods.
  */
 public class KinesisRecord extends UserRecord {
     public KinesisRecord(UserRecord record) {
@@ -20,7 +20,10 @@ public class KinesisRecord extends UserRecord {
         return new ExtendedSequenceNumber(getSequenceNumber(), getSubSequenceNumber());
     }
 
-    public byte[] getId() {
+    /***
+     * @return unique id of the record based on its position in the stream
+     */
+    public byte[] getUniqueId() {
         return getExtendedSequenceNumber().toString().getBytes(Charsets.UTF_8);
     }
 }

@@ -18,8 +18,7 @@ import javax.annotation.Nullable;
 /***
  * Checkpoint representing a total progress in a set of shards in single stream.
  * The set of shards covered by {@link KinesisReaderCheckpoint} may or may not be equal to set of
- * all
- * shards present in the stream.
+ * all shards present in the stream.
  * This class is immutable.
  */
 public class KinesisReaderCheckpoint implements Iterable<ShardCheckpoint>, UnboundedSource

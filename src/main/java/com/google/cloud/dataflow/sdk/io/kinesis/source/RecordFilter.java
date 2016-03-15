@@ -7,11 +7,13 @@ import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoin
 import java.util.List;
 
 /**
- * Created by ppastuszka on 11.03.16.
+ * Filters out records, which were already processed and checkpointed.
+ *
+ * We need this step, because we can get iterators from Kinesis only with "sequenceNumber" accuracy,
+ * not with "subSequenceNumber" accuracy.
  */
 class RecordFilter {
-    public List<KinesisRecord> transform(List<KinesisRecord> records,
-                                         ShardCheckpoint checkpoint) {
+    public List<KinesisRecord> apply(List<KinesisRecord> records, ShardCheckpoint checkpoint) {
         List<KinesisRecord> filteredRecords = newArrayList();
         for (KinesisRecord record : records) {
             if (checkpoint.isBeforeOrAt(record.getExtendedSequenceNumber())) {

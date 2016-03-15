@@ -1,7 +1,9 @@
 package com.google.cloud.dataflow.sdk.repackaged.com.google.common.base;
 
-/**
- * Created by ppastuszka on 12.12.15.
+import java.util.NoSuchElementException;
+
+/***
+ * Same as {@link Optional}, but throws {@link NoSuchElementException} for missing element.
  */
 public abstract class CustomOptional<T> extends Optional<T> {
     public static <T> Optional<T> absent() {

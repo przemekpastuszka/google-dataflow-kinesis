@@ -18,13 +18,15 @@ import java.io.IOException;
 import java.util.Deque;
 
 /***
- *
+ * Iterates over records in a single shard.
+ * Under the hood records are retrieved from Kinesis in batches and stored in the in-memory queue.
+ * Then the caller of {@link ShardRecordsIterator#next()} can read from queue one by one.
  */
 public class ShardRecordsIterator {
     private static final Logger LOG = LoggerFactory.getLogger(ShardRecordsIterator.class);
 
     private final SimplifiedKinesisClient kinesis;
-    private final RecordFilter transformer;
+    private final RecordFilter filter;
     private ShardCheckpoint checkpoint;
     private String shardIterator;
     private Deque<KinesisRecord> data = newArrayDeque();
@@ -37,17 +39,21 @@ public class ShardRecordsIterator {
 
     public ShardRecordsIterator(final ShardCheckpoint initialCheckpoint,
                                 SimplifiedKinesisClient simplifiedKinesisClient,
-                                RecordFilter transformer) throws
+                                RecordFilter filter) throws
             IOException {
         checkNotNull(initialCheckpoint);
         checkNotNull(simplifiedKinesisClient);
 
         this.checkpoint = initialCheckpoint;
-        this.transformer = transformer;
+        this.filter = filter;
         this.kinesis = simplifiedKinesisClient;
         shardIterator = checkpoint.getShardIterator(kinesis);
     }
 
+    /***
+     * Returns record if there's any present.
+     * Returns absent() if there are no new records at this time in the shard.
+     */
     public Optional<KinesisRecord> next() throws IOException {
         readMoreIfNecessary();
 
@@ -72,7 +78,7 @@ public class ShardRecordsIterator {
             }
             LOG.debug("Fetched {} new records", response.getRecords().size());
             shardIterator = response.getNextShardIterator();
-            data.addAll(transformer.transform(response.getRecords(), checkpoint));
+            data.addAll(filter.apply(response.getRecords(), checkpoint));
         }
     }
 
