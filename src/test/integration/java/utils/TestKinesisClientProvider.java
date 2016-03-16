@@ -1,14 +1,15 @@
 package utils;
 
 import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
-
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
+import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
+
 
 /***
  *
@@ -34,10 +35,13 @@ public class TestKinesisClientProvider implements KinesisClientProvider {
                 secretKey
         );
 
-        return new
-                STSAssumeRoleSessionCredentialsProvider(
-                credentials, roleToAssume, "session"
-        );
+        if (roleToAssume != null) {
+            return new
+                    STSAssumeRoleSessionCredentialsProvider(
+                    credentials, roleToAssume, "session"
+            );
+        }
+        return new StaticCredentialsProvider(credentials);
     }
 
     @Override

@@ -37,6 +37,10 @@ sourceSets {
     }
 }
 
+jar {
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
 task integration(type: Test) {
     testClassesDir = sourceSets.integration.output.classesDir
     classpath += sourceSets.integration.runtimeClasspath
