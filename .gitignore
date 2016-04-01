@@ -5,3 +5,4 @@
 .gradle
 build
 src/test/resources/testconfig.json
+tmp

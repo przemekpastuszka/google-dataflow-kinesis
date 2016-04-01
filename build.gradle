@@ -11,6 +11,7 @@ targetCompatibility = 1.7
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 sourceSets {
@@ -37,10 +38,6 @@ sourceSets {
     }
 }
 
-jar {
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-}
-
 task integration(type: Test) {
     testClassesDir = sourceSets.integration.output.classesDir
     classpath += sourceSets.integration.runtimeClasspath
@@ -53,7 +50,7 @@ task e2e(type: Test) {
 
 dependencies {
     compile 'com.amazonaws:aws-java-sdk-kinesis:1.10.40'
-    compile 'com.google.cloud.dataflow:google-cloud-dataflow-java-sdk-all:1.4.0'
+    compile 'org.apache.beam:java-sdk-all:0.1.0-incubating-SNAPSHOT'
     compile 'com.amazonaws:amazon-kinesis-client:1.6.1'
 
     testCompile 'com.google.apis:google-api-services-compute:v1-rev91-1.21.0'
