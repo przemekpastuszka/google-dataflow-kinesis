@@ -10,14 +10,14 @@ BASE_PATH="https://builds.apache.org/job/beam_MavenVerify/${build}/${group}\$${a
 
 mkdir -p tmp
 
-for ext in 'jar' 'pom'; do
-    if [ ! -f "tmp/${ARTIFACT_FULL_NAME}.${ext}" ]; then
-        wget "${BASE_PATH}.${ext}" -P tmp
+for ext in '.pom' '.jar' '-sources.jar'; do
+    if [ ! -f "tmp/${ARTIFACT_FULL_NAME}${ext}" ]; then
+        wget "${BASE_PATH}${ext}" -P tmp
     fi
 done
 
 if [ -f "tmp/${ARTIFACT_FULL_NAME}.jar" ]; then
-    mvn install:install-file -Dfile=tmp/${ARTIFACT_FULL_NAME}.jar -DpomFile=tmp/${ARTIFACT_FULL_NAME}.pom
+    mvn install:install-file -Dfile=tmp/${ARTIFACT_FULL_NAME}.jar -Dsources=tmp/${ARTIFACT_FULL_NAME}-sources.jar -DpomFile=tmp/${ARTIFACT_FULL_NAME}.pom
 else
     mvn install:install-file -Dfile=tmp/${ARTIFACT_FULL_NAME}.pom -DpomFile=tmp/${ARTIFACT_FULL_NAME}.pom
 fi

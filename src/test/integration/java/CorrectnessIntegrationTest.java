@@ -63,7 +63,6 @@ public class CorrectnessIntegrationTest {
     private Future<?> startTestPipeline() throws InterruptedException {
         final Pipeline p = TestPipeline.create();
         ((DirectPipelineRunner) p.getRunner()).getPipelineOptions().setStreaming(true);
-        ((StreamingOptions) p.getOptions()).setStreaming(true);
         PCollection<String> result = p.
                 apply(KinesisIO.Read.
                         from(
