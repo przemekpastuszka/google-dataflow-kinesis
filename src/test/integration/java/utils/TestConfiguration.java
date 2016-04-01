@@ -73,11 +73,18 @@ public class TestConfiguration {
     }
 
     public String getClusterAwsAccessKey() {
-        return configuration.getOrDefault("REMOTE_AWS_ACCESS_KEY", getAwsAccessKey());
+        return getOrDefault("REMOTE_AWS_ACCESS_KEY", getAwsAccessKey());
     }
 
     public String getClusterAwsSecretKey() {
-        return configuration.getOrDefault("REMOTE_AWS_SECRET_KEY", getAwsSecretKey());
+        return getOrDefault("REMOTE_AWS_SECRET_KEY", getAwsSecretKey());
+    }
+
+    private String getOrDefault(String key, String defaultValue) {
+        if (configuration.containsKey(key)) {
+            return configuration.get(key);
+        }
+        return defaultValue;
     }
 
     public String getClusterAwsRoleToAssume() {
