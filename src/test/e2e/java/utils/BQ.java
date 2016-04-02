@@ -25,8 +25,10 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Lists;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.BigqueryScopes;
+import com.google.api.services.bigquery.model.GetQueryResultsResponse;
+import com.google.api.services.bigquery.model.QueryRequest;
+import com.google.api.services.bigquery.model.QueryResponse;
 import com.google.api.services.bigquery.model.Table;
-import com.google.api.services.bigquery.model.TableDataList;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TableSchema;
@@ -56,6 +58,16 @@ public class BQ {
         return Holder.INSTANCE;
     }
 
+    public static void main(String[] args) throws IOException {
+        List<String> rows = get().readAllFrom(
+                new TableReference().setProjectId(args[0]).setDatasetId(args[1]).setTableId(args[2])
+        );
+        System.out.println(rows.size());
+//        for (String row : rows) {
+//            System.out.println(row);
+//        }
+    }
+
     public Table createTable(TableReference reference, TableSchema tableSchema) throws IOException {
         return bigquery.tables().insert(
                 reference.getProjectId(),
@@ -78,20 +90,25 @@ public class BQ {
     }
 
     public List<String> readAllFrom(TableReference reference) throws IOException {
-        List<TableRow> rows = Lists.newArrayList();
-        String pageToken = null;
-        TableDataList callResult;
-        do {
-            callResult = bigquery.tabledata().list
-                    (reference.getProjectId(),
-                            reference.getDatasetId(),
-                            reference.getTableId()).setPageToken(pageToken).execute();
-            pageToken = callResult.getPageToken();
+        String query = String.format("SELECT * FROM %s.%s", reference.getDatasetId(),
+                reference.getTableId());
+        QueryResponse response = bigquery.jobs().query
+                (reference.getProjectId(), new QueryRequest().setQuery(query)).execute();
 
-            if (callResult.getRows() != null) {
-                rows.addAll(callResult.getRows());
+        List<TableRow> rows = Lists.newArrayList(response.getRows());
+        String pageToken = response.getPageToken();
+
+        while (pageToken != null) {
+            GetQueryResultsResponse rowsResponse =
+                    bigquery.jobs().getQueryResults(reference.getProjectId(), response
+                            .getJobReference().getJobId()).setPageToken(pageToken).execute();
+
+            pageToken = rowsResponse.getPageToken();
+
+            if (rowsResponse.getRows() != null) {
+                rows.addAll(rowsResponse.getRows());
             }
-        } while (pageToken != null);
+        }
 
         List<String> columnValues = Lists.newArrayList();
         for (TableRow row : rows) {
