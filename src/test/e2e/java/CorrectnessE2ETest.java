@@ -91,7 +91,7 @@ public class CorrectnessE2ETest {
         GCE.get().startInstance(randomInstance);
         TestUtils.waitForRecordsToBeSentToKinesis(futures);
 
-        verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(5));
+        verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(6));
     }
 
     @Test

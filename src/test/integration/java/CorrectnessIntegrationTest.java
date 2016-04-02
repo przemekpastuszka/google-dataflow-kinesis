@@ -1,7 +1,6 @@
 import com.google.cloud.dataflow.sdk.Pipeline;
 import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.io.KinesisIO;
-import com.google.cloud.dataflow.sdk.options.StreamingOptions;
 import com.google.cloud.dataflow.sdk.runners.DirectPipelineRunner;
 import com.google.cloud.dataflow.sdk.testing.DataflowAssert;
 import com.google.cloud.dataflow.sdk.testing.TestPipeline;
@@ -31,7 +30,7 @@ import utils.TestUtils;
 public class CorrectnessIntegrationTest {
     private static final Logger LOG = LoggerFactory.getLogger(CorrectnessIntegrationTest.class);
     private static final long PIPELINE_STARTUP_TIME = TimeUnit.SECONDS.toMillis(10);
-    private static final long ADDITIONAL_PROCESSING_TIME = TimeUnit.SECONDS.toMillis(20);
+    private static final long ADDITIONAL_PROCESSING_TIME = TimeUnit.SECONDS.toMillis(30);
     private static final long RECORD_GENERATION_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
     public static final long TOTAL_PROCESSING_TIME = PIPELINE_STARTUP_TIME +
             RECORD_GENERATION_TIMEOUT +
