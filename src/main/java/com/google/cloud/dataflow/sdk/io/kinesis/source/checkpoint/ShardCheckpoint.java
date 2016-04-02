@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint;
 
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
@@ -35,7 +52,7 @@ public class ShardCheckpoint implements Serializable {
     private final String shardId;
     private final String sequenceNumber;
     private final ShardIteratorType shardIteratorType;
-    private final long subSequenceNumber;
+    private final Long subSequenceNumber;
 
     public ShardCheckpoint(String streamName, String shardId, InitialPositionInStream
             initialPositionInStream) {
@@ -46,11 +63,11 @@ public class ShardCheckpoint implements Serializable {
 
     public ShardCheckpoint(String streamName, String shardId, ShardIteratorType
             shardIteratorType, String sequenceNumber) {
-        this(streamName, shardId, shardIteratorType, sequenceNumber, 0L);
+        this(streamName, shardId, shardIteratorType, sequenceNumber, null);
     }
 
     public ShardCheckpoint(String streamName, String shardId, ShardIteratorType
-            shardIteratorType, String sequenceNumber, long subSequenceNumber) {
+            shardIteratorType, String sequenceNumber, Long subSequenceNumber) {
 
         checkNotNull(streamName);
         checkNotNull(shardId);
@@ -105,6 +122,11 @@ public class ShardCheckpoint implements Serializable {
     }
 
     public String getShardIterator(SimplifiedKinesisClient kinesisClient) throws IOException {
+        if (shardIteratorType == AFTER_SEQUENCE_NUMBER && subSequenceNumber != null) {
+            return kinesisClient.getShardIterator(streamName,
+                    shardId, AT_SEQUENCE_NUMBER,
+                    sequenceNumber);
+        }
         return kinesisClient.getShardIterator(streamName,
                 shardId, shardIteratorType,
                 sequenceNumber);
