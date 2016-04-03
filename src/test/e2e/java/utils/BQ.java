@@ -63,9 +63,6 @@ public class BQ {
                 new TableReference().setProjectId(args[0]).setDatasetId(args[1]).setTableId(args[2])
         );
         System.out.println(rows.size());
-//        for (String row : rows) {
-//            System.out.println(row);
-//        }
     }
 
     public Table createTable(TableReference reference, TableSchema tableSchema) throws IOException {

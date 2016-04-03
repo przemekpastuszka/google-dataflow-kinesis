@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import static com.google.api.client.repackaged.com.google.common.base.Strings.commonPrefix;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets.newHashSet;
 import com.google.api.services.bigquery.model.TableReference;
@@ -23,30 +24,26 @@ import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets;
 import com.google.cloud.dataflow.sdk.runners.DataflowPipelineJob;
-import com.google.common.util.concurrent.ListenableFuture;
 
-import com.amazonaws.services.kinesis.producer.UserRecordResult;
 import static org.fest.assertions.Assertions.assertThat;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
 import static java.lang.System.currentTimeMillis;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import utils.BQ;
 import utils.GCE;
-import utils.PubSubUtil;
 import utils.TestConfiguration;
 import utils.TestUtils;
+import utils.kinesis.KinesisUploader;
+import utils.kinesis.KinesisUploaderProvider;
 
 /**
  * Created by ppastuszka on 12.12.15.
@@ -57,7 +54,7 @@ public class CorrectnessE2ETest {
     private TableReference testTable;
     private DataflowPipelineJob job;
 
-    @Before
+    @BeforeTest
     public void setUp() throws IOException {
         job = null;
         testTable = TestUtils.getTestTableReference();
@@ -65,7 +62,7 @@ public class CorrectnessE2ETest {
         BQ.get().createTable(testTable, TestUtils.getTestTableSchema());
     }
 
-    @After
+    @AfterTest
     public void tearDown() throws IOException, InterruptedException {
         BQ.get().deleteTableIfExists(testTable);
         if (job != null) {
@@ -77,61 +74,41 @@ public class CorrectnessE2ETest {
         }
     }
 
-    @Test
-    public void testSimpleCorrectnessOnDataflowService() throws InterruptedException,
+    @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide", enabled =
+            false)
+    public void testSimpleCorrectnessOnDataflowService(KinesisUploader client) throws
+            InterruptedException,
             IOException, TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
 
         List<String> testData = TestUtils.randomStrings(20000);
-        TestUtils.putRecordsWithKinesisProducer(testData);
+        client.startUploadingRecords(testData).waitForFinish(Long.MAX_VALUE);
 
         verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(2));
     }
 
-    @Test
-    public void dealsWithInstanceBeingRestarted() throws InterruptedException, IOException,
+    @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide",
+            invocationCount = 10)
+    public void dealsWithInstanceBeingRestarted(KinesisUploader client) throws
+            InterruptedException, IOException,
             TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
         LOG.info("Sending events to kinesis");
 
         List<String> testData = TestUtils.randomStrings(40000);
-        List<ListenableFuture<UserRecordResult>> futures = TestUtils
-                .startPuttingRecordsWithKinesisProducer(testData);
+        KinesisUploader.RecordUploadFuture future = client.startUploadingRecords(testData);
         Instance randomInstance = chooseRandomInstance();
         GCE.get().stopInstance(randomInstance);
-        TestUtils.waitForRecordsToBeSentToKinesis(futures);
+        future.waitForFinish(Long.MAX_VALUE);
 
         List<String> newTestData = TestUtils.randomStrings(40000);
-        futures = TestUtils.startPuttingRecordsWithKinesisProducer(newTestData);
+        future = client.startUploadingRecords(newTestData);
         testData.addAll(newTestData);
         GCE.get().startInstance(randomInstance);
-        TestUtils.waitForRecordsToBeSentToKinesis(futures);
+        future.waitForFinish(Long.MAX_VALUE);
 
         verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(6));
-    }
-
-    @Test
-    @Ignore
-    public void dealsWithInstanceBeingRestartedOnPubSub() throws InterruptedException,
-            IOException, ExecutionException {
-        job = TestUtils.runPubSubToBigQueryJob(testTable);
-        LOG.info("Sending events to kinesis");
-
-        List<String> testData = TestUtils.randomStrings(40000);
-        List<Future<?>> futures = PubSubUtil.get()
-                .startSendingRecordsToPubSub(testData);
-        Instance randomInstance = chooseRandomInstance();
-        GCE.get().stopInstance(randomInstance);
-        PubSubUtil.get().waitForRecordsToBeSentToPubSub(futures);
-
-        List<String> newTestData = TestUtils.randomStrings(40000);
-        futures = PubSubUtil.get().startSendingRecordsToPubSub(newTestData);
-        testData.addAll(newTestData);
-        GCE.get().startInstance(randomInstance);
-        PubSubUtil.get().waitForRecordsToBeSentToPubSub(futures);
-
-        verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(5));
     }
 
     private Instance chooseRandomInstance() throws IOException {

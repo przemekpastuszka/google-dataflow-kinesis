@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import com.google.cloud.dataflow.sdk.Pipeline;
 import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.io.KinesisIO;
@@ -27,10 +28,10 @@ import com.google.cloud.dataflow.sdk.values.PCollection;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import static org.fest.assertions.Assertions.assertThat;
 import org.joda.time.Duration;
-import org.junit.Before;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +41,8 @@ import java.util.concurrent.TimeUnit;
 import static utils.TestUtils.getTestKinesisClientProvider;
 import utils.TestConfiguration;
 import utils.TestUtils;
+import utils.kinesis.KinesisUploader;
+import utils.kinesis.KinesisUploaderProvider;
 
 /***
  *
@@ -48,30 +51,22 @@ public class CorrectnessIntegrationTest {
     private static final Logger LOG = LoggerFactory.getLogger(CorrectnessIntegrationTest.class);
     private static final long PIPELINE_STARTUP_TIME = TimeUnit.SECONDS.toMillis(10);
     private static final long ADDITIONAL_PROCESSING_TIME = TimeUnit.SECONDS.toMillis(30);
-    private static final long RECORD_GENERATION_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
+    private static final long RECORD_GENERATION_TIMEOUT = TimeUnit.SECONDS.toMillis(35);
     public static final long TOTAL_PROCESSING_TIME = PIPELINE_STARTUP_TIME +
             RECORD_GENERATION_TIMEOUT +
             ADDITIONAL_PROCESSING_TIME;
     private ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
     private List<String> testData;
 
-    @Before
+    @BeforeTest
     public void setUp() {
         testData = TestUtils.randomStrings(50000);
     }
 
-    @Test
-    public void readerTestWithKinesisProducer() throws Exception {
+    @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide")
+    public void readerTestWithKinesisProducer(KinesisUploader client) throws Exception {
         Future<?> future = startTestPipeline();
-        TestUtils.putRecordsWithKinesisProducer(testData, RECORD_GENERATION_TIMEOUT);
-        LOG.info("All data sent to kinesis");
-        future.get();
-    }
-
-    @Test
-    public void readerTestWithOldStylePuts() throws Exception {
-        Future<?> future = startTestPipeline();
-        TestUtils.putRecordsOldStyle(testData, RECORD_GENERATION_TIMEOUT);
+        client.startUploadingRecords(testData).waitForFinish(RECORD_GENERATION_TIMEOUT);
         LOG.info("All data sent to kinesis");
         future.get();
     }
