@@ -38,14 +38,19 @@ import utils.TestUtils;
  *
  */
 public class KPLUploader implements KinesisUploader {
-    @Override
-    public RecordUploadFuture startUploadingRecords(List<String> data) {
-        KinesisProducer producer = new KinesisProducer(
+    private KinesisProducer producer;
+
+    public KPLUploader() {
+        producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
                         setRateLimit(90).
                         setCredentialsProvider(TestUtils.getTestAwsCredentialsProvider()).
                         setRegion(TestConfiguration.get().getTestRegion())
         );
+    }
+
+    @Override
+    public RecordUploadFuture startUploadingRecords(List<String> data) {
         List<ListenableFuture<UserRecordResult>> futures = newArrayList();
         for (String s : data) {
             ListenableFuture<UserRecordResult> future = producer.addUserRecord(

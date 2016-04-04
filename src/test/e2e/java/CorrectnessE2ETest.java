@@ -28,8 +28,8 @@ import com.google.cloud.dataflow.sdk.runners.DataflowPipelineJob;
 import static org.fest.assertions.Assertions.assertThat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static java.lang.System.currentTimeMillis;
 import java.io.IOException;
@@ -54,7 +54,7 @@ public class CorrectnessE2ETest {
     private TableReference testTable;
     private DataflowPipelineJob job;
 
-    @BeforeTest
+    @BeforeMethod
     public void setUp() throws IOException {
         job = null;
         testTable = TestUtils.getTestTableReference();
@@ -62,7 +62,7 @@ public class CorrectnessE2ETest {
         BQ.get().createTable(testTable, TestUtils.getTestTableSchema());
     }
 
-    @AfterTest
+    @AfterMethod
     public void tearDown() throws IOException, InterruptedException {
         BQ.get().deleteTableIfExists(testTable);
         if (job != null) {

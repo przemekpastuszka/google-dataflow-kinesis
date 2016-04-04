@@ -44,6 +44,14 @@ import utils.TestUtils;
  */
 public class OldStyleUploader implements KinesisUploader {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private AmazonKinesisClient client;
+
+    public OldStyleUploader() {
+        client = new AmazonKinesisClient
+                (TestUtils.getTestAwsCredentialsProvider())
+                .withRegion(
+                        Regions.fromName(TestConfiguration.get().getTestRegion()));
+    }
 
     @Override
     public RecordUploadFuture startUploadingRecords(final List<String> data) {
@@ -64,10 +72,7 @@ public class OldStyleUploader implements KinesisUploader {
     private void uploadAll(List<String> data) {
         List<List<String>> partitions = Lists.partition(data, 499);
 
-        AmazonKinesisClient client = new AmazonKinesisClient
-                (TestUtils.getTestAwsCredentialsProvider())
-                .withRegion(
-                        Regions.fromName(TestConfiguration.get().getTestRegion()));
+
         for (List<String> partition : partitions) {
             List<PutRecordsRequestEntry> allRecords = newArrayList();
             for (String row : partition) {
