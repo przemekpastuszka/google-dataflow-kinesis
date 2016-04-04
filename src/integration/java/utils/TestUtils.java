@@ -160,7 +160,7 @@ public class TestUtils {
         while (job.getState() != PipelineResult.State.RUNNING) {
             Thread.sleep(1000);
         }
-        Thread.sleep(1000 * 60 * 3);
+        Thread.sleep(1000 * 60 * 5);
         return job;
     }
 

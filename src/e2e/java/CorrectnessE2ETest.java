@@ -102,7 +102,7 @@ public class CorrectnessE2ETest {
         GCE.get().stopInstance(randomInstance);
         future.waitForFinish(Long.MAX_VALUE);
 
-        List<String> newTestData = TestUtils.randomStrings(40000);
+        List<String> newTestData = TestUtils.randomStrings(40000, 40000);
         future = client.startUploadingRecords(newTestData);
         testData.addAll(newTestData);
         GCE.get().startInstance(randomInstance);
