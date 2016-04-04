@@ -1,3 +1,8 @@
+plugins {
+    id 'org.unbroken-dome.test-sets' version '1.2.0'
+}
+
+
 group 'com.google.cloud.dataflow.sdk.io.kinesis'
 version '1.0-SNAPSHOT'
 
@@ -5,6 +10,7 @@ apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'findbugs'
 apply plugin: 'checkstyle'
+
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
@@ -14,51 +20,21 @@ repositories {
     mavenLocal()
 }
 
-sourceSets {
-    test {
-        java {
-            srcDir "src/test/unit/java"
-        }
-    }
-
-    integration {
-        java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
-            srcDir 'src/test/integration/java'
-        }
-    }
-
-    e2e {
-        java {
-            srcDir 'src/test/e2e/java'
-            compileClasspath += main.output + test.output + integration.output
-            runtimeClasspath += main.output + test.output + integration.output
-        }
-    }
+testSets {
+    integration
+    e2e { extendsFrom integration }
 }
 
-configurations {
-    integrationCompile.extendsFrom testCompile
-    integrationRuntime.extendsFrom testRuntime
-
-    e2eCompile.extendsFrom integrationCompile
-    e2eRuntime.extendsFrom integrationRuntime
+integration {
+    useTestNG()
 }
 
-task integration(type: Test) {
-    testClassesDir = sourceSets.integration.output.classesDir
-    classpath = sourceSets.integration.runtimeClasspath
+e2e {
+    useTestNG()
 }
-
-task e2e(type: Test) {
-    testClassesDir = sourceSets.e2e.output.classesDir
-    classpath = sourceSets.e2e.runtimeClasspath
-}
-
 
 if (!project.hasProperty("dataflowVersion")) {
-    ext.dataflowVersion = 'apache'
+    ext.dataflowVersion = 'google'
 }
 
 def dataflowJarMap = ['google': 'com.google.cloud.dataflow:google-cloud-dataflow-java-sdk-all:1.5.0',
@@ -71,6 +47,7 @@ dependencies {
 
 
     e2eCompile 'com.google.apis:google-api-services-compute:v1-rev91-1.21.0'
+    e2eCompile sourceSets.integration.output
 
     integrationCompile 'org.testng:testng:6.9.10'
     integrationCompile('com.amazonaws:amazon-kinesis-producer:0.10.2') {
@@ -85,13 +62,4 @@ dependencies {
     }
     testCompile 'org.hamcrest:java-hamcrest:2.0.0.0'
     testCompile group: 'junit', name: 'junit', version: '4.11'
-}
-
-idea {
-    module {
-        testSourceDirs += file('src/test/integration/java')
-        testSourceDirs += file('src/test/e2e/java')
-
-        scopes.TEST.plus += [configurations.integrationCompile, configurations.integrationRuntime, configurations.e2eCompile, configurations.e2eRuntime]
-    }
 }

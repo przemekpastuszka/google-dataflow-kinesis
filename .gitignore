@@ -4,5 +4,5 @@
 .idea
 .gradle
 build
-src/test/resources/testconfig.json
+src/integration/resources/testconfig.json
 tmp
