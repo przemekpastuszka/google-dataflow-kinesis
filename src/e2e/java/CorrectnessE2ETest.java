@@ -79,7 +79,25 @@ public class CorrectnessE2ETest {
     @Test(invocationCount = 10)
     public void dealsWithInstanceBeingRestartedOnPubSub() throws InterruptedException,
             IOException, ExecutionException, TimeoutException {
-       runDisasterResilienceTestCase(new PubSubUploader());
+        PubSubUploader client = new PubSubUploader();
+        job = TestUtils.runPubSubToBigQueryJob(testTable);
+        LOG.info("Sending events");
+
+        List<String> testData = TestUtils.randomStrings(40000);
+        RecordsUploader.RecordUploadFuture future = client.startUploadingRecords(testData);
+        Instance randomInstance = chooseRandomInstance();
+
+        GCE.get().stopInstance(randomInstance);
+
+        future.waitForFinish(Long.MAX_VALUE);
+
+        List<String> newTestData = TestUtils.randomStrings(40000, 40000);
+        future = client.startUploadingRecords(newTestData);
+        testData.addAll(newTestData);
+        GCE.get().startInstance(randomInstance);
+        future.waitForFinish(Long.MAX_VALUE);
+
+        verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(6));
     }
 
     @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide", enabled =
