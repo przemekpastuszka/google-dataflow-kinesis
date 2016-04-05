@@ -27,10 +27,16 @@ testSets {
 
 integration {
     useTestNG()
+    testLogging {
+        showStandardStreams = true
+    }
 }
 
 e2e {
     useTestNG()
+    testLogging {
+        showStandardStreams = true
+    }
 }
 
 if (!project.hasProperty("dataflowVersion")) {
@@ -53,8 +59,11 @@ dependencies {
     integrationCompile('com.amazonaws:amazon-kinesis-producer:0.10.2') {
         exclude module: 'aws-java-sdk-core'
     }
-    integrationCompile 'org.slf4j:slf4j-simple:1.7.13'
+    integrationCompile 'org.slf4j:jul-to-slf4j:1.7.20'
+    integrationCompile 'org.slf4j:slf4j-log4j12:1.7.20'
     integrationCompile 'com.amazonaws:aws-java-sdk-sts:1.10.40'
+    integrationCompile 'log4j:log4j:1.2.17'
+
 
     testCompile 'org.easytesting:fest-assert:1.4'
     testCompile('org.mockito:mockito-core:1.10.19') {
@@ -62,4 +71,13 @@ dependencies {
     }
     testCompile 'org.hamcrest:java-hamcrest:2.0.0.0'
     testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+idea {
+    module {
+        testSourceDirs += file('src/integration/java')
+        testSourceDirs += file('src/e2e/java')
+
+        scopes.TEST.plus += [configurations.integrationCompile, configurations.integrationRuntime, configurations.e2eCompile, configurations.e2eRuntime]
+    }
 }

@@ -16,34 +16,35 @@
  * limitations under the License.
  */
 
-import static com.google.api.client.repackaged.com.google.common.base.Strings.commonPrefix;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets.newHashSet;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.compute.model.Instance;
 import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets;
 import com.google.cloud.dataflow.sdk.runners.DataflowPipelineJob;
-
-import static org.fest.assertions.Assertions.assertThat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static java.lang.System.currentTimeMillis;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import utils.BQ;
 import utils.GCE;
 import utils.TestConfiguration;
 import utils.TestUtils;
 import utils.kinesis.KinesisUploader;
 import utils.kinesis.KinesisUploaderProvider;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static com.google.api.client.repackaged.com.google.common.base.Strings.commonPrefix;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets.newHashSet;
+import static java.lang.System.currentTimeMillis;
+import static org.fest.assertions.Assertions.assertThat;
 
 /**
  * Created by ppastuszka on 12.12.15.
@@ -59,11 +60,13 @@ public class CorrectnessE2ETest {
         job = null;
         testTable = TestUtils.getTestTableReference();
         BQ.get().deleteTableIfExists(testTable);
+        LOG.info("Creating table" + testTable);
         BQ.get().createTable(testTable, TestUtils.getTestTableSchema());
     }
 
     @AfterMethod
     public void tearDown() throws IOException, InterruptedException {
+        LOG.info("Deleting table" + testTable);
         BQ.get().deleteTableIfExists(testTable);
         if (job != null) {
             job.cancel();
@@ -73,6 +76,7 @@ public class CorrectnessE2ETest {
             }
         }
     }
+
 
     @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide", enabled =
             false)
@@ -102,7 +106,7 @@ public class CorrectnessE2ETest {
         GCE.get().stopInstance(randomInstance);
         future.waitForFinish(Long.MAX_VALUE);
 
-        List<String> newTestData = TestUtils.randomStrings(40000);
+        List<String> newTestData = TestUtils.randomStrings(40000, 40000);
         future = client.startUploadingRecords(newTestData);
         testData.addAll(newTestData);
         GCE.get().startInstance(randomInstance);

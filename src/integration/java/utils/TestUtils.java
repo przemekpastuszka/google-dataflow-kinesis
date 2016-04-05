@@ -17,8 +17,10 @@
  */
 package utils;
 
-import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
-import static com.google.api.client.util.Lists.newArrayList;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
@@ -38,22 +40,28 @@ import com.google.cloud.dataflow.sdk.transforms.ParDo;
 import com.google.cloud.dataflow.sdk.transforms.windowing.FixedWindows;
 import com.google.cloud.dataflow.sdk.transforms.windowing.Window;
 import com.google.cloud.dataflow.sdk.values.PCollection;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
-import static org.joda.time.Duration.standardDays;
-import static org.joda.time.Duration.standardSeconds;
-import static java.util.Arrays.asList;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.List;
+
+import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
+import static com.google.api.client.util.Lists.newArrayList;
+import static java.util.Arrays.asList;
+import static org.joda.time.Duration.standardDays;
+import static org.joda.time.Duration.standardSeconds;
 
 /***
  *
  */
 public class TestUtils {
+
+    static {
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+
+        SLF4JBridgeHandler.install();
+    }
 
     public static final SecureRandom RANDOM = new SecureRandom();
 
@@ -160,7 +168,7 @@ public class TestUtils {
         while (job.getState() != PipelineResult.State.RUNNING) {
             Thread.sleep(1000);
         }
-        Thread.sleep(1000 * 60 * 3);
+        Thread.sleep(1000 * 60 * 5);
         return job;
     }
 
