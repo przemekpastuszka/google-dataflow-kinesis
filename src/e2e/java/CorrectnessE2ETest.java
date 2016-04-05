@@ -27,17 +27,16 @@ import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import utils.BQ;
-import utils.GCE;
-import utils.TestConfiguration;
-import utils.TestUtils;
-import utils.kinesis.KinesisUploader;
+import utils.*;
+import utils.kinesis.RecordsUploader;
 import utils.kinesis.KinesisUploaderProvider;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -77,10 +76,15 @@ public class CorrectnessE2ETest {
         }
     }
 
+    @Test(invocationCount = 10)
+    public void dealsWithInstanceBeingRestartedOnPubSub() throws InterruptedException,
+            IOException, ExecutionException, TimeoutException {
+       runDisasterResilienceTestCase(new PubSubUploader());
+    }
 
     @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide", enabled =
             false)
-    public void testSimpleCorrectnessOnDataflowService(KinesisUploader client) throws
+    public void testSimpleCorrectnessOnDataflowService(RecordsUploader client) throws
             InterruptedException,
             IOException, TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
@@ -93,17 +97,23 @@ public class CorrectnessE2ETest {
     }
 
     @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide",
-            invocationCount = 10)
-    public void dealsWithInstanceBeingRestarted(KinesisUploader client) throws
+            invocationCount = 10, enabled=false)
+    public void dealsWithInstanceBeingRestarted(RecordsUploader client) throws
             InterruptedException, IOException,
             TimeoutException {
+        runDisasterResilienceTestCase(client);
+    }
+
+    private void runDisasterResilienceTestCase(RecordsUploader client) throws InterruptedException, IOException, TimeoutException {
         job = TestUtils.runKinesisToBigQueryJob(testTable);
-        LOG.info("Sending events to kinesis");
+        LOG.info("Sending events");
 
         List<String> testData = TestUtils.randomStrings(40000);
-        KinesisUploader.RecordUploadFuture future = client.startUploadingRecords(testData);
+        RecordsUploader.RecordUploadFuture future = client.startUploadingRecords(testData);
         Instance randomInstance = chooseRandomInstance();
+
         GCE.get().stopInstance(randomInstance);
+
         future.waitForFinish(Long.MAX_VALUE);
 
         List<String> newTestData = TestUtils.randomStrings(40000, 40000);

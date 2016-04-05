@@ -42,11 +42,11 @@ import utils.TestUtils;
 /**
  *
  */
-public class OldStyleUploader implements KinesisUploader {
+public class OldStyleKinesisUploader implements RecordsUploader {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private AmazonKinesisClient client;
 
-    public OldStyleUploader() {
+    public OldStyleKinesisUploader() {
         client = new AmazonKinesisClient
                 (TestUtils.getTestAwsCredentialsProvider())
                 .withRegion(
@@ -104,7 +104,7 @@ public class OldStyleUploader implements KinesisUploader {
         }
     }
 
-    private static class RecordUploaderFuture implements KinesisUploader.RecordUploadFuture {
+    private static class RecordUploaderFuture implements RecordsUploader.RecordUploadFuture {
 
         private final Future<Void> future;
 

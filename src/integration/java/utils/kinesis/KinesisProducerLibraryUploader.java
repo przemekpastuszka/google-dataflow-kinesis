@@ -37,10 +37,10 @@ import utils.TestUtils;
 /**
  *
  */
-public class KPLUploader implements KinesisUploader {
+public class KinesisProducerLibraryUploader implements RecordsUploader {
     private KinesisProducer producer;
 
-    public KPLUploader() {
+    public KinesisProducerLibraryUploader() {
         producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
                         setRateLimit(90).
@@ -67,7 +67,7 @@ public class KPLUploader implements KinesisUploader {
         return "KinesisProducerLibrary uploader";
     }
 
-    private static class RecordsFutures implements KinesisUploader.RecordUploadFuture {
+    private static class RecordsFutures implements RecordsUploader.RecordUploadFuture {
 
         private final List<ListenableFuture<UserRecordResult>> futures;
 

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeoutException;
 /**
  *
  */
-public interface KinesisUploader {
+public interface RecordsUploader {
     RecordUploadFuture startUploadingRecords(List<String> data);
 
     /**

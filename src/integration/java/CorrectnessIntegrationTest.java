@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 import static utils.TestUtils.getTestKinesisClientProvider;
 import utils.TestConfiguration;
 import utils.TestUtils;
-import utils.kinesis.KinesisUploader;
+import utils.kinesis.RecordsUploader;
 import utils.kinesis.KinesisUploaderProvider;
 
 /***
@@ -64,7 +64,7 @@ public class CorrectnessIntegrationTest {
     }
 
     @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide")
-    public void readerTestWithKinesisProducer(KinesisUploader client) throws Exception {
+    public void readerTestWithKinesisProducer(RecordsUploader client) throws Exception {
         Future<?> future = startTestPipeline();
         client.startUploadingRecords(testData).waitForFinish(RECORD_GENERATION_TIMEOUT);
         LOG.info("All data sent to kinesis");
