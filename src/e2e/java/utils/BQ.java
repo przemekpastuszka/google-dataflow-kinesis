@@ -17,7 +17,6 @@
  */
 package utils;
 
-import static com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -25,16 +24,12 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Lists;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.BigqueryScopes;
-import com.google.api.services.bigquery.model.GetQueryResultsResponse;
-import com.google.api.services.bigquery.model.QueryRequest;
-import com.google.api.services.bigquery.model.QueryResponse;
-import com.google.api.services.bigquery.model.Table;
-import com.google.api.services.bigquery.model.TableReference;
-import com.google.api.services.bigquery.model.TableRow;
-import com.google.api.services.bigquery.model.TableSchema;
+import com.google.api.services.bigquery.model.*;
 
 import java.io.IOException;
 import java.util.List;
+
+import static com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport;
 
 /**
  * Created by ppastuszka on 14.12.15.
@@ -92,7 +87,10 @@ public class BQ {
         QueryResponse response = bigquery.jobs().query
                 (reference.getProjectId(), new QueryRequest().setQuery(query)).execute();
 
-        List<TableRow> rows = Lists.newArrayList(response.getRows());
+        List<TableRow> rows = Lists.newArrayList();
+        if (response.getRows() != null) {
+            rows.addAll(response.getRows());
+        }
         String pageToken = response.getPageToken();
 
         while (pageToken != null) {

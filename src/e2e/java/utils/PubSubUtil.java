@@ -20,6 +20,8 @@ package utils;
 import static com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport;
 import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkArgument;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.partition;
+import static java.util.Arrays.asList;
+
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -30,6 +32,7 @@ import com.google.api.services.pubsub.model.PublishRequest;
 import com.google.api.services.pubsub.model.PubsubMessage;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -80,13 +83,6 @@ public class PubSubUtil {
         return futures;
     }
 
-    public void waitForRecordsToBeSentToPubSub(List<Future<?>> futures) throws
-            ExecutionException, InterruptedException {
-        for (Future<?> future : futures) {
-            future.get();
-        }
-    }
-
     public void sendDataTo(String topic, List<String> data) throws IOException {
         checkArgument(data.size() <= MAX_NUM_OF_RECRODS);
         List<PubsubMessage> messages = Lists.newArrayList();
@@ -99,5 +95,9 @@ public class PubSubUtil {
 
     private static class Holder {
         private static final PubSubUtil INSTANCE = new PubSubUtil();
+    }
+
+    public static void main(String[] args) {
+        get().startSendingRecordsToPubSub(asList("test"));
     }
 }
