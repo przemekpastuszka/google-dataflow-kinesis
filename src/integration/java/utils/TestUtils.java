@@ -114,24 +114,20 @@ public class TestUtils {
         ));
     }
 
-    public static DataflowPipelineOptions getTestPipelineOptions() {
+    public static DataflowPipelineOptions getTestPipelineOptions(String jobName) {
         DataflowPipelineOptions options = PipelineOptionsFactory.as(DataflowPipelineOptions.class);
         options.setProject(TestConfiguration.get().getTestProject());
         options.setStreaming(true);
-        options.setJobName(getJobName());
+        options.setJobName(jobName);
         options.setRunner(DataflowPipelineRunner.class);
         options.setStagingLocation(TestConfiguration.get().getTestStagingLocation());
         options.setTempLocation(TestConfiguration.get().getTestTempLocation());
         return options;
     }
 
-    public static String getJobName() {
-        return "e2eKinesisConnectorCorrectness";
-    }
-
-    public static DataflowPipelineJob runKinesisToBigQueryJob(TableReference targetTable)
+    public static DataflowPipelineJob runKinesisToBigQueryJob(TableReference targetTable, String jobName)
             throws InterruptedException {
-        DataflowPipelineOptions options = getTestPipelineOptions();
+        DataflowPipelineOptions options = getTestPipelineOptions(jobName);
         Pipeline p = Pipeline.create(options);
         PCollection<String> input = p.
                 apply(KinesisIO.Read.
@@ -144,9 +140,9 @@ public class TestUtils {
         return runBqJob(targetTable, options, p, input);
     }
 
-    public static DataflowPipelineJob runPubSubToBigQueryJob(TableReference targetTable)
+    public static DataflowPipelineJob runPubSubToBigQueryJob(TableReference targetTable, String jobName)
             throws InterruptedException {
-        DataflowPipelineOptions options = getTestPipelineOptions();
+        DataflowPipelineOptions options = getTestPipelineOptions(jobName);
         Pipeline p = Pipeline.create(options);
         PCollection<String> input = p.apply(PubsubIO.Read.topic(TestConfiguration.get()
                 .getTestPubSubTopic()));

@@ -36,7 +36,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -48,8 +47,9 @@ import static org.fest.assertions.Assertions.assertThat;
 /**
  * Created by ppastuszka on 12.12.15.
  */
-public class CorrectnessE2ETest {
-    private static final Logger LOG = LoggerFactory.getLogger(CorrectnessE2ETest.class);
+public class KinesisCorrectnessE2ETest {
+    private static final Logger LOG = LoggerFactory.getLogger(KinesisCorrectnessE2ETest.class);
+    public static final String JOB_NAME = "kinesisConnectorE2ETest";
 
     private TableReference testTable;
     private DataflowPipelineJob job;
@@ -76,36 +76,11 @@ public class CorrectnessE2ETest {
         }
     }
 
-    @Test(invocationCount = 10)
-    public void dealsWithInstanceBeingRestartedOnPubSub() throws InterruptedException,
-            IOException, ExecutionException, TimeoutException {
-        PubSubUploader client = new PubSubUploader();
-        job = TestUtils.runPubSubToBigQueryJob(testTable);
-        LOG.info("Sending events");
-
-        List<String> testData = TestUtils.randomStrings(40000);
-        RecordsUploader.RecordUploadFuture future = client.startUploadingRecords(testData);
-        Instance randomInstance = chooseRandomInstance();
-
-        GCE.get().stopInstance(randomInstance);
-
-        future.waitForFinish(Long.MAX_VALUE);
-
-        List<String> newTestData = TestUtils.randomStrings(40000, 40000);
-        future = client.startUploadingRecords(newTestData);
-        testData.addAll(newTestData);
-        GCE.get().startInstance(randomInstance);
-        future.waitForFinish(Long.MAX_VALUE);
-
-        verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(6));
-    }
-
-    @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide", enabled =
-            false)
+    @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide")
     public void testSimpleCorrectnessOnDataflowService(RecordsUploader client) throws
             InterruptedException,
             IOException, TimeoutException {
-        job = TestUtils.runKinesisToBigQueryJob(testTable);
+        job = TestUtils.runKinesisToBigQueryJob(testTable, JOB_NAME);
         LOG.info("Sending events to kinesis");
 
         List<String> testData = TestUtils.randomStrings(20000);
@@ -115,7 +90,7 @@ public class CorrectnessE2ETest {
     }
 
     @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide",
-            invocationCount = 10, enabled=false)
+            invocationCount = 10)
     public void dealsWithInstanceBeingRestarted(RecordsUploader client) throws
             InterruptedException, IOException,
             TimeoutException {
@@ -123,7 +98,7 @@ public class CorrectnessE2ETest {
     }
 
     private void runDisasterResilienceTestCase(RecordsUploader client) throws InterruptedException, IOException, TimeoutException {
-        job = TestUtils.runKinesisToBigQueryJob(testTable);
+        job = TestUtils.runKinesisToBigQueryJob(testTable, JOB_NAME);
         LOG.info("Sending events");
 
         List<String> testData = TestUtils.randomStrings(40000);
@@ -155,7 +130,7 @@ public class CorrectnessE2ETest {
 
         List<Instance> currentDataflowInstances = Lists.newArrayList();
         for (Instance instance : allInstances) {
-            String prefix = commonPrefix(TestUtils.getJobName().toLowerCase(), instance.getName()
+            String prefix = commonPrefix(JOB_NAME.toLowerCase(), instance.getName()
                     .toLowerCase());
             if (prefix.length() >= 20) {
                 currentDataflowInstances.add(instance);

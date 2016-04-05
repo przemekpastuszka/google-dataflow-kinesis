@@ -87,6 +87,11 @@ public class KinesisReaderCheckpoint implements Iterable<ShardCheckpoint>, Unbou
     }
 
     @Override
+    public String toString() {
+        return shardCheckpoints.toString();
+    }
+
+    @Override
     public Iterator<ShardCheckpoint> iterator() {
         return shardCheckpoints.iterator();
     }
