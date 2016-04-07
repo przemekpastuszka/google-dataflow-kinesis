@@ -20,7 +20,8 @@ package com.google.cloud.dataflow.sdk.io.kinesis.source;
 import static com.google.api.client.util.Lists.newArrayList;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
         .checkNotNull;
-import com.google.cloud.dataflow.sdk.coders.ByteArrayCoder;
+
+import com.amazonaws.services.kinesis.model.Record;
 import com.google.cloud.dataflow.sdk.coders.Coder;
 import com.google.cloud.dataflow.sdk.coders.SerializableCoder;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
@@ -43,7 +44,7 @@ import java.util.List;
 /***
  *
  */
-public class KinesisSource extends UnboundedSource<byte[], KinesisReaderCheckpoint> {
+public class KinesisSource extends UnboundedSource<Record, KinesisReaderCheckpoint> {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisSource.class);
 
     private final KinesisClientProvider kinesis;
@@ -78,8 +79,8 @@ public class KinesisSource extends UnboundedSource<byte[], KinesisReaderCheckpoi
     }
 
     @Override
-    public UnboundedReader<byte[]> createReader(PipelineOptions options,
-                                                KinesisReaderCheckpoint checkpointMark) {
+    public UnboundedReader<Record> createReader(PipelineOptions options,
+                                            KinesisReaderCheckpoint checkpointMark) {
 
         CheckpointGenerator checkpointGenerator = initialCheckpointGenerator;
 
@@ -107,8 +108,8 @@ public class KinesisSource extends UnboundedSource<byte[], KinesisReaderCheckpoi
     }
 
     @Override
-    public Coder<byte[]> getDefaultOutputCoder() {
-        return ByteArrayCoder.of();
+    public Coder<Record> getDefaultOutputCoder() {
+        return KinesisRecordCoder.of();
     }
 
 

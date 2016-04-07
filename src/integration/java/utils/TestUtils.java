@@ -21,6 +21,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
+import com.amazonaws.services.kinesis.model.Record;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
@@ -33,6 +34,7 @@ import com.google.cloud.dataflow.sdk.io.PubsubIO;
 import com.google.cloud.dataflow.sdk.options.DataflowPipelineOptions;
 import com.google.cloud.dataflow.sdk.options.PipelineOptionsFactory;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
 import com.google.cloud.dataflow.sdk.runners.DataflowPipelineJob;
 import com.google.cloud.dataflow.sdk.runners.DataflowPipelineRunner;
 import com.google.cloud.dataflow.sdk.transforms.DoFn;
@@ -44,10 +46,12 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
-import static com.google.api.client.util.Lists.newArrayList;
 import static java.util.Arrays.asList;
 import static org.joda.time.Duration.standardDays;
 import static org.joda.time.Duration.standardSeconds;
@@ -74,7 +78,7 @@ public class TestUtils {
     }
 
     public static List<String> randomStrings(int howMany, int startingId) {
-        List<String> data = newArrayList();
+        List<String> data = Lists.newArrayList();
         for (int i = startingId; i < startingId + howMany; ++i) {
             data.add(String.format("%s - %s", i, TestUtils.randomString()));
         }
@@ -125,6 +129,13 @@ public class TestUtils {
         return options;
     }
 
+    public static <T> Collection<T> pickNRandom(Collection<T> input, int n) {
+        List<T> list = Lists.newArrayList(input);
+        Collections.shuffle(list);
+
+        return Lists.partition(list, n).get(0);
+    }
+
     public static DataflowPipelineJob runKinesisToBigQueryJob(TableReference targetTable, String jobName)
             throws InterruptedException {
         DataflowPipelineOptions options = getTestPipelineOptions(jobName);
@@ -133,9 +144,9 @@ public class TestUtils {
                 apply(KinesisIO.Read.
                         from(
                                 TestConfiguration.get().getTestKinesisStream(),
-                                InitialPositionInStream.LATEST).
+                                InitialPositionInStream.TRIM_HORIZON).
                         using(getTestKinesisClientProvider())).
-                apply(ParDo.of(new ByteArrayToString()));
+                apply(ParDo.of(new RecordDataToString()));
 
         return runBqJob(targetTable, options, p, input);
     }
@@ -154,11 +165,11 @@ public class TestUtils {
                                                 DataflowPipelineOptions options, Pipeline p,
                                                 PCollection<String> input) throws
             InterruptedException {
-        input.apply(Window.<String>into(FixedWindows.of(standardSeconds(10))).
-                withAllowedLateness(standardDays(1))).
+        input.apply(Window.<String>into(FixedWindows.of(standardSeconds(10))).withAllowedLateness(standardDays(1))).
                 apply(ParDo.of(new ToTableRow())).
                 apply(BigQueryIO.Write.
                         to(targetTable).
+
                         withSchema(TestUtils.getTestTableSchema()));
         DataflowPipelineJob job = DataflowPipelineRunner.fromOptions(options).run(p);
         while (job.getState() != PipelineResult.State.RUNNING) {
@@ -186,11 +197,11 @@ public class TestUtils {
     /***
      *
      */
-    public static class ByteArrayToString extends DoFn<byte[], String> {
+    public static class RecordDataToString extends DoFn<Record, String> {
         @Override
         public void processElement(ProcessContext c) throws Exception {
             checkNotNull(c.element());
-            c.output(new String(c.element(), Charsets.UTF_8));
+            c.output(new String(c.element().getData().array(), Charsets.UTF_8));
         }
     }
 }

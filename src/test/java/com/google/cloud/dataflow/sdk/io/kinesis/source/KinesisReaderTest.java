@@ -66,11 +66,6 @@ public class KinesisReaderTest {
         when(firstIterator.next()).thenReturn(CustomOptional.<KinesisRecord>absent());
         when(secondIterator.next()).thenReturn(CustomOptional.<KinesisRecord>absent());
 
-        when(a.getData()).thenReturn(asBytes("a"));
-        when(b.getData()).thenReturn(asBytes("b"));
-        when(c.getData()).thenReturn(asBytes("c"));
-        when(d.getData()).thenReturn(asBytes("d"));
-
         reader = new KinesisReader(kinesis, generator, null);
     }
 
@@ -110,21 +105,14 @@ public class KinesisReaderTest {
                 thenReturn(CustomOptional.<KinesisRecord>absent());
 
         assertThat(reader.start()).isTrue();
-        assertThat(fromBytes(reader.getCurrent())).isEqualTo("c");
+        assertThat(reader.getCurrent()).isEqualTo(c);
         assertThat(reader.advance()).isTrue();
-        assertThat(fromBytes(reader.getCurrent())).isEqualTo("a");
+        assertThat(reader.getCurrent()).isEqualTo(a);
         assertThat(reader.advance()).isTrue();
-        assertThat(fromBytes(reader.getCurrent())).isEqualTo("d");
+        assertThat(reader.getCurrent()).isEqualTo(d);
         assertThat(reader.advance()).isTrue();
-        assertThat(fromBytes(reader.getCurrent())).isEqualTo("b");
+        assertThat(reader.getCurrent()).isEqualTo(b);
         assertThat(reader.advance()).isFalse();
     }
 
-    private String fromBytes(byte[] bytes) {
-        return new String(bytes, UTF_8);
-    }
-
-    private ByteBuffer asBytes(String text) {
-        return ByteBuffer.wrap(text.getBytes(UTF_8));
-    }
 }

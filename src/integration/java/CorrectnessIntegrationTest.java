@@ -84,7 +84,7 @@ public class CorrectnessIntegrationTest {
                                 TOTAL_PROCESSING_TIME)
                         )
                 ).
-                apply(ParDo.of(new TestUtils.ByteArrayToString()));
+                apply(ParDo.of(new TestUtils.RecordDataToString()));
         DataflowAssert.that(result).containsInAnyOrder(testData);
 
         Future<?> future = singleThreadExecutor.submit(new Callable<Void>() {

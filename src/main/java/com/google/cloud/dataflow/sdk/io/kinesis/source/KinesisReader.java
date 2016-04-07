@@ -20,6 +20,8 @@ package com.google.cloud.dataflow.sdk.io.kinesis.source;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
         .checkNotNull;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.newArrayList;
+
+import com.amazonaws.services.kinesis.model.Record;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
@@ -41,11 +43,11 @@ import java.util.NoSuchElementException;
 /***
  * Reads data from multiple kinesis shards in a single thread.
  */
-class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
+class KinesisReader extends UnboundedSource.UnboundedReader<Record> {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisReader.class);
 
     private final SimplifiedKinesisClient kinesis;
-    private final UnboundedSource<byte[], ?> source;
+    private final UnboundedSource<Record, ?> source;
     private final CheckpointGenerator initialCheckpointGenerator;
     private RoundRobin<ShardRecordsIterator> shardIterators;
     private Optional<KinesisRecord> currentRecord = CustomOptional.absent();
@@ -53,7 +55,7 @@ class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
 
     public KinesisReader(SimplifiedKinesisClient kinesis,
                          CheckpointGenerator initialCheckpointGenerator,
-                         UnboundedSource<byte[], ?> source) {
+                         UnboundedSource<Record, ?> source) {
         checkNotNull(kinesis);
         checkNotNull(initialCheckpointGenerator);
 
@@ -104,8 +106,8 @@ class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     }
 
     @Override
-    public byte[] getCurrent() throws NoSuchElementException {
-        return currentRecord.get().getData().array();
+    public Record getCurrent() throws NoSuchElementException {
+        return currentRecord.get();
     }
 
     /***
@@ -140,7 +142,7 @@ class KinesisReader extends UnboundedSource.UnboundedReader<byte[]> {
     }
 
     @Override
-    public UnboundedSource<byte[], ?> getCurrentSource() {
+    public UnboundedSource<Record, ?> getCurrentSource() {
         return source;
     }
 

@@ -17,6 +17,7 @@
  */
 package com.google.cloud.dataflow.sdk.io;
 
+import com.amazonaws.services.kinesis.model.Record;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.KinesisSource;
 import com.google.cloud.dataflow.sdk.transforms.PTransform;
@@ -61,7 +62,7 @@ public class KinesisIO {
          * You should use this method if {@link Read#using(String, String, Regions)} does not
          * suite your needs.
          */
-        public com.google.cloud.dataflow.sdk.io.Read.Unbounded<byte[]> using
+        public com.google.cloud.dataflow.sdk.io.Read.Unbounded<Record> using
                 (KinesisClientProvider kinesisClientProvider) {
             return com.google.cloud.dataflow.sdk.io.Read.from(
                     new KinesisSource(kinesisClientProvider, streamName,
@@ -73,7 +74,7 @@ public class KinesisIO {
          * If you need more sophisticated credential protocol, then you should look at
          * {@link Read#using(KinesisClientProvider)}.
          */
-        public com.google.cloud.dataflow.sdk.io.Read.Unbounded<byte[]> using(String awsAccessKey,
+        public com.google.cloud.dataflow.sdk.io.Read.Unbounded<Record> using(String awsAccessKey,
                                                                              String awsSecretKey,
                                                                              Regions region) {
             return using(new BasicKinesisProvider(awsAccessKey, awsSecretKey, region));
