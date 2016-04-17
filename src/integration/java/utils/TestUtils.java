@@ -17,11 +17,7 @@
  */
 package utils;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
-import com.amazonaws.services.kinesis.model.Record;
+import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
@@ -42,32 +38,34 @@ import com.google.cloud.dataflow.sdk.transforms.ParDo;
 import com.google.cloud.dataflow.sdk.transforms.windowing.FixedWindows;
 import com.google.cloud.dataflow.sdk.transforms.windowing.Window;
 import com.google.cloud.dataflow.sdk.values.PCollection;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
+import com.amazonaws.services.kinesis.model.Record;
+import static org.joda.time.Duration.standardDays;
+import static org.joda.time.Duration.standardSeconds;
+import org.slf4j.bridge.SLF4JBridgeHandler;
+import static java.util.Arrays.asList;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
-import static java.util.Arrays.asList;
-import static org.joda.time.Duration.standardDays;
-import static org.joda.time.Duration.standardSeconds;
 
 /***
  *
  */
 public class TestUtils {
 
+    public static final SecureRandom RANDOM = new SecureRandom();
+
     static {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
 
         SLF4JBridgeHandler.install();
     }
-
-    public static final SecureRandom RANDOM = new SecureRandom();
 
     public static String randomString() {
         return new BigInteger(130, RANDOM).toString(32);
@@ -136,7 +134,8 @@ public class TestUtils {
         return Lists.partition(list, n).get(0);
     }
 
-    public static DataflowPipelineJob runKinesisToBigQueryJob(TableReference targetTable, String jobName)
+    public static DataflowPipelineJob runKinesisToBigQueryJob(TableReference targetTable, String
+            jobName)
             throws InterruptedException {
         DataflowPipelineOptions options = getTestPipelineOptions(jobName);
         Pipeline p = Pipeline.create(options);
@@ -151,7 +150,8 @@ public class TestUtils {
         return runBqJob(targetTable, options, p, input);
     }
 
-    public static DataflowPipelineJob runPubSubToBigQueryJob(TableReference targetTable, String jobName)
+    public static DataflowPipelineJob runPubSubToBigQueryJob(TableReference targetTable, String
+            jobName)
             throws InterruptedException {
         DataflowPipelineOptions options = getTestPipelineOptions(jobName);
         Pipeline p = Pipeline.create(options);
@@ -165,7 +165,8 @@ public class TestUtils {
                                                 DataflowPipelineOptions options, Pipeline p,
                                                 PCollection<String> input) throws
             InterruptedException {
-        input.apply(Window.<String>into(FixedWindows.of(standardSeconds(10))).withAllowedLateness(standardDays(1))).
+        input.apply(Window.<String>into(FixedWindows.of(standardSeconds(10))).withAllowedLateness
+                (standardDays(1))).
                 apply(ParDo.of(new ToTableRow())).
                 apply(BigQueryIO.Write.
                         to(targetTable).

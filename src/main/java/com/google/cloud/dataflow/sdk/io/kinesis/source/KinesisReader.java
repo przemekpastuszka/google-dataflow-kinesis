@@ -20,8 +20,6 @@ package com.google.cloud.dataflow.sdk.io.kinesis.source;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
         .checkNotNull;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.newArrayList;
-
-import com.amazonaws.services.kinesis.model.Record;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
@@ -32,6 +30,7 @@ import com.google.cloud.dataflow.sdk.io.kinesis.utils.RoundRobin;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
+import com.amazonaws.services.kinesis.model.Record;
 import org.joda.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

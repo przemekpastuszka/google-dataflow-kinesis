@@ -20,8 +20,6 @@ package com.google.cloud.dataflow.sdk.io.kinesis.source;
 import static com.google.api.client.util.Lists.newArrayList;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
         .checkNotNull;
-
-import com.amazonaws.services.kinesis.model.Record;
 import com.google.cloud.dataflow.sdk.coders.Coder;
 import com.google.cloud.dataflow.sdk.coders.SerializableCoder;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
@@ -36,6 +34,7 @@ import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
+import com.amazonaws.services.kinesis.model.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
@@ -56,7 +55,7 @@ public class KinesisSource extends UnboundedSource<Record, KinesisReaderCheckpoi
     }
 
     private KinesisSource(KinesisClientProvider kinesisClientProvider,
-                  CheckpointGenerator initialCheckpoint) {
+                          CheckpointGenerator initialCheckpoint) {
         this.kinesis = kinesisClientProvider;
         this.initialCheckpointGenerator = initialCheckpoint;
         validate();
@@ -80,7 +79,7 @@ public class KinesisSource extends UnboundedSource<Record, KinesisReaderCheckpoi
 
     @Override
     public UnboundedReader<Record> createReader(PipelineOptions options,
-                                            KinesisReaderCheckpoint checkpointMark) {
+                                                KinesisReaderCheckpoint checkpointMark) {
 
         CheckpointGenerator checkpointGenerator = initialCheckpointGenerator;
 

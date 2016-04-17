@@ -16,21 +16,22 @@
  * limitations under the License.
  */
 
+import static com.google.api.client.repackaged.com.google.common.base.Strings.commonPrefix;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets.newHashSet;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.compute.model.Instance;
 import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets;
 import com.google.cloud.dataflow.sdk.runners.DataflowPipelineJob;
+
+import static org.fest.assertions.Assertions.assertThat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import utils.*;
-import utils.kinesis.RecordsUploader;
-import utils.kinesis.KinesisUploaderProvider;
-
+import static java.lang.System.currentTimeMillis;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -38,20 +39,21 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static com.google.api.client.repackaged.com.google.common.base.Strings.commonPrefix;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets.newHashSet;
-import static java.lang.System.currentTimeMillis;
-import static org.fest.assertions.Assertions.assertThat;
 import static utils.TestUtils.pickNRandom;
+import utils.BQ;
+import utils.GCE;
+import utils.PubSubUploader;
+import utils.TestConfiguration;
+import utils.TestUtils;
+import utils.kinesis.KinesisUploaderProvider;
+import utils.kinesis.RecordsUploader;
 
 /**
  * Created by ppastuszka on 12.12.15.
  */
 public class KinesisCorrectnessE2ETest {
-    private static final Logger LOG = LoggerFactory.getLogger(KinesisCorrectnessE2ETest.class);
     public static final String JOB_NAME = "kinesisConnectorE2ETest";
-
+    private static final Logger LOG = LoggerFactory.getLogger(KinesisCorrectnessE2ETest.class);
     private TableReference testTable;
     private DataflowPipelineJob job;
 
@@ -67,7 +69,7 @@ public class KinesisCorrectnessE2ETest {
     @AfterMethod
     public void tearDown() throws IOException, InterruptedException {
         LOG.info("Deleting table" + testTable);
-//        BQ.get().deleteTableIfExists(testTable);
+        BQ.get().deleteTableIfExists(testTable);
         if (job != null) {
             job.cancel();
             while (job.getState() != PipelineResult.State.CANCELLED) {
@@ -106,7 +108,8 @@ public class KinesisCorrectnessE2ETest {
         runDisasterResilienceTestCase(new PubSubUploader());
     }
 
-    private void runDisasterResilienceTestCase(RecordsUploader client) throws InterruptedException, IOException, TimeoutException {
+    private void runDisasterResilienceTestCase(RecordsUploader client) throws
+            InterruptedException, IOException, TimeoutException {
         LOG.info("Sending events");
 
         List<String> testData = TestUtils.randomStrings(40000);
@@ -176,10 +179,11 @@ public class KinesisCorrectnessE2ETest {
         HashSet<String> setOfDataInBQ = newHashSet(dataFromBQ);
 
         Set<String> dataNotInBQ = Sets.difference(setOfExpectedData, setOfDataInBQ);
-        Set<String> redundantDataInBQ = Sets.difference(setOfDataInBQ, setOfExpectedData);
+//        Set<String> redundantDataInBQ = Sets.difference(setOfDataInBQ, setOfExpectedData);
 
         assertThat(dataNotInBQ).
-                overridingErrorMessage(String.format("%s records missing in BQ: %s...", dataNotInBQ.size(), pickNRandom(dataNotInBQ, 30))).
+                overridingErrorMessage(String.format("%s records missing in BQ: %s...",
+                        dataNotInBQ.size(), pickNRandom(dataNotInBQ, 30))).
                 isEmpty();
 //        assertThat(redundantDataInBQ).isEmpty();
     }

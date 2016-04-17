@@ -112,7 +112,8 @@ public class ShardCheckpoint implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("Checkpoint %s for stream %s, shard %s: %s", shardIteratorType, streamName, shardId,
+        return String.format("Checkpoint %s for stream %s, shard %s: %s", shardIteratorType,
+                streamName, shardId,
                 sequenceNumber);
     }
 
