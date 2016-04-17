@@ -44,6 +44,7 @@ public class KinesisProducerLibraryUploader implements RecordsUploader {
         producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
                         setRateLimit(90).
+                        setRecordTtl(TimeUnit.MINUTES.toMillis(1)).
                         setMetricsLevel("none").
                         setCredentialsProvider(TestUtils.getTestAwsCredentialsProvider()).
                         setRegion(TestConfiguration.get().getTestRegion())

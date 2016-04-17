@@ -1,4 +1,4 @@
-# User guide to Kinesis source for DataFlow
+# User guide to Kinesis source for DataFlow [![Build Status](https://travis-ci.org/rtshadow/google-dataflow-kinesis.svg?branch=master)](https://travis-ci.org/rtshadow/google-dataflow-kinesis)
 
 Library, which allows to use [Kinesis](https://aws.amazon.com/kinesis/) as a source for Google DataFlow pipeline.
 
