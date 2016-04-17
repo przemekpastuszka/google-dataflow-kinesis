@@ -17,9 +17,9 @@
  */
 package utils;
 
+import static org.apache.beam.sdk.repackaged.com.google.common.collect.Lists.partition;
 import static com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport;
 import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkArgument;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.partition;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -65,7 +65,7 @@ public class PubSubUtil {
 
     public List<Future<?>> startSendingRecordsToPubSub(List<String> data) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        List<Future<?>> futures = com.google.cloud.dataflow.sdk.repackaged.com.google.common
+        List<Future<?>> futures = org.apache.beam.sdk.repackaged.com.google.common
                 .collect.Lists.newArrayList();
 
         for (final List<String> partition : partition(data, PubSubUtil.MAX_NUM_OF_RECRODS)) {

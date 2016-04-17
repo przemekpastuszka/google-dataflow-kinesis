@@ -17,9 +17,9 @@
  */
 package utils.kinesis;
 
+import org.apache.beam.sdk.repackaged.com.google.common.base.Charsets;
+import org.apache.beam.sdk.repackaged.com.google.common.collect.Lists;
 import static com.google.api.client.util.Lists.newArrayList;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;

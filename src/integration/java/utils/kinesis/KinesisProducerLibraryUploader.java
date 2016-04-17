@@ -17,8 +17,8 @@
  */
 package utils.kinesis;
 
+import org.apache.beam.sdk.repackaged.com.google.common.base.Charsets;
 import static com.google.api.client.util.Lists.newArrayList;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.amazonaws.services.kinesis.producer.KinesisProducer;

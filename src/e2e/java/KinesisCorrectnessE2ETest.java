@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
+import static org.apache.beam.sdk.repackaged.com.google.common.collect.Sets.newHashSet;
+import org.apache.beam.sdk.PipelineResult;
+import org.apache.beam.sdk.repackaged.com.google.common.collect.Lists;
+import org.apache.beam.sdk.repackaged.com.google.common.collect.Sets;
+import org.apache.beam.sdk.runners.DataflowPipelineJob;
 import static com.google.api.client.repackaged.com.google.common.base.Strings.commonPrefix;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets.newHashSet;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.compute.model.Instance;
-import com.google.cloud.dataflow.sdk.PipelineResult;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets;
-import com.google.cloud.dataflow.sdk.runners.DataflowPipelineJob;
 
 import static org.fest.assertions.Assertions.assertThat;
 import org.slf4j.Logger;

@@ -3,6 +3,8 @@ prepare-local-maven:
 	./tools/jar_installer.sh java-sdk-all
 	./tools/jar_installer.sh sdks-parent
 	./tools/jar_installer.sh parent
+	./tools/jar_installer.sh runners-parent
+	./tools/jar_installer.sh google-cloud-dataflow-java-runner
 
 clean:
 	./gradlew clean
