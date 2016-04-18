@@ -16,17 +16,16 @@
  * limitations under the License.
  */
 
-import com.google.cloud.dataflow.sdk.Pipeline;
-import com.google.cloud.dataflow.sdk.PipelineResult;
-import com.google.cloud.dataflow.sdk.io.KinesisIO;
-import com.google.cloud.dataflow.sdk.runners.DirectPipelineRunner;
-import com.google.cloud.dataflow.sdk.testing.DataflowAssert;
-import com.google.cloud.dataflow.sdk.testing.TestPipeline;
-import com.google.cloud.dataflow.sdk.transforms.ParDo;
-import com.google.cloud.dataflow.sdk.values.PCollection;
-
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import static org.fest.assertions.Assertions.assertThat;
+import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.PipelineResult;
+import org.apache.beam.sdk.io.KinesisIO;
+import org.apache.beam.sdk.runners.DirectPipelineRunner;
+import org.apache.beam.sdk.testing.PAssert;
+import org.apache.beam.sdk.testing.TestPipeline;
+import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +40,8 @@ import java.util.concurrent.TimeUnit;
 import static utils.TestUtils.getTestKinesisClientProvider;
 import utils.TestConfiguration;
 import utils.TestUtils;
-import utils.kinesis.RecordsUploader;
 import utils.kinesis.KinesisUploaderProvider;
+import utils.kinesis.RecordsUploader;
 
 /***
  *
@@ -50,8 +49,8 @@ import utils.kinesis.KinesisUploaderProvider;
 public class CorrectnessIntegrationTest {
     private static final Logger LOG = LoggerFactory.getLogger(CorrectnessIntegrationTest.class);
     private static final long PIPELINE_STARTUP_TIME = TimeUnit.SECONDS.toMillis(10);
-    private static final long ADDITIONAL_PROCESSING_TIME = TimeUnit.SECONDS.toMillis(60);
-    private static final long RECORD_GENERATION_TIMEOUT = TimeUnit.SECONDS.toMillis(35);
+    private static final long ADDITIONAL_PROCESSING_TIME = TimeUnit.SECONDS.toMillis(50);
+    private static final long RECORD_GENERATION_TIMEOUT = TimeUnit.MINUTES.toMillis(2);
     public static final long TOTAL_PROCESSING_TIME = PIPELINE_STARTUP_TIME +
             RECORD_GENERATION_TIMEOUT +
             ADDITIONAL_PROCESSING_TIME;
@@ -85,7 +84,7 @@ public class CorrectnessIntegrationTest {
                         )
                 ).
                 apply(ParDo.of(new TestUtils.RecordDataToString()));
-        DataflowAssert.that(result).containsInAnyOrder(testData);
+        PAssert.that(result).containsInAnyOrder(testData);
 
         Future<?> future = singleThreadExecutor.submit(new Callable<Void>() {
             @Override

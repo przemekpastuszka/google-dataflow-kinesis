@@ -38,19 +38,25 @@ e2e {
     testLogging {
         showStandardStreams = true
     }
+    outputs.upToDateWhen { false }
 }
 
 if (!project.hasProperty("dataflowVersion")) {
-    ext.dataflowVersion = 'google'
+    ext.dataflowVersion = 'apache'
 }
 
-def dataflowJarMap = ['google': 'com.google.cloud.dataflow:google-cloud-dataflow-java-sdk-all:1.5.0',
-                      'apache': 'org.apache.beam:java-sdk-all:0.1.0-incubating-SNAPSHOT']
+def dataflowJarMap = ['google': ['com.google.cloud.dataflow:google-cloud-dataflow-java-sdk-all:1.5.0'],
+                      'apache': [
+                              'org.apache.beam:java-sdk-all:0.1.0-incubating-SNAPSHOT',
+                              'org.apache.beam:google-cloud-dataflow-java-runner:0.1.0-incubating-SNAPSHOT'
+                      ]]
 
 dependencies {
-    compile dataflowJarMap.get(dataflowVersion)
-    compile 'com.amazonaws:aws-java-sdk-kinesis:1.10.40'
-    compile 'com.amazonaws:amazon-kinesis-client:1.6.1'
+    dataflowJarMap.get(dataflowVersion).each { jar_name ->
+        compile jar_name
+    }
+    compile 'com.amazonaws:aws-java-sdk-kinesis:1.10.69'
+    compile 'com.amazonaws:amazon-kinesis-client:1.6.2'
 
     e2eCompile 'com.google.apis:google-api-services-compute:v1-rev91-1.21.0'
     e2eCompile sourceSets.integration.output
@@ -61,7 +67,7 @@ dependencies {
     }
     integrationCompile 'org.slf4j:jul-to-slf4j:1.7.20'
     integrationCompile 'org.slf4j:slf4j-log4j12:1.7.20'
-    integrationCompile 'com.amazonaws:aws-java-sdk-sts:1.10.40'
+    integrationCompile 'com.amazonaws:aws-java-sdk-sts:1.10.69'
     integrationCompile 'log4j:log4j:1.2.17'
 
 

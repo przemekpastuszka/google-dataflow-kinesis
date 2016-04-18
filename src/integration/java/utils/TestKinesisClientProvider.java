@@ -17,7 +17,8 @@
  */
 package utils;
 
-import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
+import org.apache.beam.sdk.io.kinesis.client.KinesisClientProvider;
+
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;

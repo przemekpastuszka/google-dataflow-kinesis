@@ -17,11 +17,9 @@
  */
 package utils;
 
+import static org.apache.beam.sdk.repackaged.com.google.common.collect.Lists.partition;
 import static com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport;
 import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkArgument;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.partition;
-import static java.util.Arrays.asList;
-
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -31,10 +29,9 @@ import com.google.api.services.pubsub.PubsubScopes;
 import com.google.api.services.pubsub.model.PublishRequest;
 import com.google.api.services.pubsub.model.PubsubMessage;
 
+import static java.util.Arrays.asList;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -62,9 +59,13 @@ public class PubSubUtil {
         return Holder.INSTANCE;
     }
 
+    public static void main(String[] args) {
+        get().startSendingRecordsToPubSub(asList("test"));
+    }
+
     public List<Future<?>> startSendingRecordsToPubSub(List<String> data) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        List<Future<?>> futures = com.google.cloud.dataflow.sdk.repackaged.com.google.common
+        List<Future<?>> futures = org.apache.beam.sdk.repackaged.com.google.common
                 .collect.Lists.newArrayList();
 
         for (final List<String> partition : partition(data, PubSubUtil.MAX_NUM_OF_RECRODS)) {
@@ -95,9 +96,5 @@ public class PubSubUtil {
 
     private static class Holder {
         private static final PubSubUtil INSTANCE = new PubSubUtil();
-    }
-
-    public static void main(String[] args) {
-        get().startSendingRecordsToPubSub(asList("test"));
     }
 }

@@ -17,8 +17,8 @@
  */
 package utils.kinesis;
 
+import org.apache.beam.sdk.repackaged.com.google.common.base.Charsets;
 import static com.google.api.client.util.Lists.newArrayList;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
@@ -44,6 +44,7 @@ public class KinesisProducerLibraryUploader implements RecordsUploader {
         producer = new KinesisProducer(
                 new KinesisProducerConfiguration().
                         setRateLimit(90).
+                        setRecordTtl(TimeUnit.MINUTES.toMillis(1)).
                         setMetricsLevel("none").
                         setCredentialsProvider(TestUtils.getTestAwsCredentialsProvider()).
                         setRegion(TestConfiguration.get().getTestRegion())
