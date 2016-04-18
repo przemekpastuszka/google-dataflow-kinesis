@@ -130,10 +130,14 @@ public class TestUtils {
     }
 
     public static <T> Collection<T> pickNRandom(Collection<T> input, int n) {
+        if(input.isEmpty()) {
+            return input;
+        }
+
         List<T> list = Lists.newArrayList(input);
         Collections.shuffle(list);
 
-        return Lists.partition(list, n).get(0);
+        return Lists.partition(list, Math.min(n, list.size())).get(0);
     }
 
     public static DataflowPipelineJob runKinesisToBigQueryJob(TableReference targetTable, String jobName)

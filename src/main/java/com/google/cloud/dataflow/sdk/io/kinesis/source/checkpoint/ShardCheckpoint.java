@@ -78,7 +78,7 @@ public class ShardCheckpoint implements Serializable {
                             " or AFTER_SEQUENCE_NUMBER");
         } else {
             checkArgument(sequenceNumber == null,
-                    "Sequence number must be null for LATEST and TRIM_HORIZON");
+                    "Sequence number must be null for LATEST or TRIM_HORIZON");
         }
 
         this.subSequenceNumber = subSequenceNumber;

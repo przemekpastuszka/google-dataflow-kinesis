@@ -50,7 +50,7 @@ import utils.kinesis.KinesisUploaderProvider;
 public class CorrectnessIntegrationTest {
     private static final Logger LOG = LoggerFactory.getLogger(CorrectnessIntegrationTest.class);
     private static final long PIPELINE_STARTUP_TIME = TimeUnit.SECONDS.toMillis(10);
-    private static final long ADDITIONAL_PROCESSING_TIME = TimeUnit.SECONDS.toMillis(30);
+    private static final long ADDITIONAL_PROCESSING_TIME = TimeUnit.SECONDS.toMillis(60);
     private static final long RECORD_GENERATION_TIMEOUT = TimeUnit.SECONDS.toMillis(35);
     public static final long TOTAL_PROCESSING_TIME = PIPELINE_STARTUP_TIME +
             RECORD_GENERATION_TIMEOUT +

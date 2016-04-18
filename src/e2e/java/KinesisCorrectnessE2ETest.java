@@ -28,8 +28,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import utils.*;
-import utils.kinesis.RecordsUploader;
 import utils.kinesis.KinesisUploaderProvider;
+import utils.kinesis.RecordsUploader;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -50,7 +50,6 @@ import static utils.TestUtils.pickNRandom;
  */
 public class KinesisCorrectnessE2ETest {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisCorrectnessE2ETest.class);
-    public static final String JOB_NAME = "kinesisConnectorE2ETest";
 
     private TableReference testTable;
     private DataflowPipelineJob job;
@@ -77,11 +76,11 @@ public class KinesisCorrectnessE2ETest {
         }
     }
 
-    @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide")
+    @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide", enabled = false)
     public void testSimpleCorrectnessOnDataflowService(RecordsUploader client) throws
             InterruptedException,
             IOException, TimeoutException {
-        job = TestUtils.runKinesisToBigQueryJob(testTable, JOB_NAME);
+        job = TestUtils.runKinesisToBigQueryJob(testTable, "kinesisSimpleCorrectness");
         LOG.info("Sending events to kinesis");
 
         List<String> testData = TestUtils.randomStrings(20000);
@@ -91,27 +90,29 @@ public class KinesisCorrectnessE2ETest {
     }
 
     @Test(dataProviderClass = KinesisUploaderProvider.class, dataProvider = "provide",
-            invocationCount = 10)
+            invocationCount = 10, enabled = true)
     public void dealsWithInstanceBeingRestarted(RecordsUploader client) throws
             InterruptedException, IOException,
             TimeoutException {
-        job = TestUtils.runKinesisToBigQueryJob(testTable, JOB_NAME);
-        runDisasterResilienceTestCase(client);
+        String jobName = "kinesisDisasterRecovery2";
+        job = TestUtils.runKinesisToBigQueryJob(testTable, jobName);
+        runDisasterResilienceTestCase(client, jobName);
     }
 
     @Test(invocationCount = 10, enabled = false)
     public void dealsWithInstanceBeingRestartedOnPubSub() throws InterruptedException,
             IOException, ExecutionException, TimeoutException {
-        job = TestUtils.runPubSubToBigQueryJob(testTable, JOB_NAME);
-        runDisasterResilienceTestCase(new PubSubUploader());
+        String jobName = "pubSubDisasterRecovery";
+        job = TestUtils.runPubSubToBigQueryJob(testTable, jobName);
+        runDisasterResilienceTestCase(new PubSubUploader(), jobName);
     }
 
-    private void runDisasterResilienceTestCase(RecordsUploader client) throws InterruptedException, IOException, TimeoutException {
+    private void runDisasterResilienceTestCase(RecordsUploader client, String jobName) throws InterruptedException, IOException, TimeoutException {
         LOG.info("Sending events");
 
         List<String> testData = TestUtils.randomStrings(40000);
         RecordsUploader.RecordUploadFuture future = client.startUploadingRecords(testData);
-        Instance randomInstance = chooseRandomInstance();
+        Instance randomInstance = chooseRandomInstance(jobName);
 
         GCE.get().stopInstance(randomInstance);
 
@@ -126,19 +127,19 @@ public class KinesisCorrectnessE2ETest {
         verifyDataPresentInBigQuery(testData, TimeUnit.MINUTES.toMillis(12));
     }
 
-    private Instance chooseRandomInstance() throws IOException {
-        List<Instance> currentDataflowInstances = getCurrentDataflowInstances();
+    private Instance chooseRandomInstance(String jobName) throws IOException {
+        List<Instance> currentDataflowInstances = getCurrentDataflowInstances(jobName);
         int randomIndex = TestUtils.RANDOM.nextInt(currentDataflowInstances.size());
         return currentDataflowInstances.get(randomIndex);
     }
 
-    private List<Instance> getCurrentDataflowInstances() throws IOException {
+    private List<Instance> getCurrentDataflowInstances(String jobName) throws IOException {
         List<Instance> allInstances = GCE.get()
                 .listInstances(TestConfiguration.get().getTestProject());
 
         List<Instance> currentDataflowInstances = Lists.newArrayList();
         for (Instance instance : allInstances) {
-            String prefix = commonPrefix(JOB_NAME.toLowerCase(), instance.getName()
+            String prefix = commonPrefix(jobName.toLowerCase(), instance.getName()
                     .toLowerCase());
             if (prefix.length() >= 20) {
                 currentDataflowInstances.add(instance);
