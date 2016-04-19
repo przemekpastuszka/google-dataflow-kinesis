@@ -147,7 +147,7 @@ public class TestUtils {
                 apply(KinesisIO.Read.
                         from(
                                 TestConfiguration.get().getTestKinesisStream(),
-                                InitialPositionInStream.TRIM_HORIZON).
+                                InitialPositionInStream.LATEST).
                         using(getTestKinesisClientProvider())).
                 apply(ParDo.of(new RecordDataToString()));
 
@@ -180,7 +180,7 @@ public class TestUtils {
         while (job.getState() != PipelineResult.State.RUNNING) {
             Thread.sleep(1000);
         }
-        Thread.sleep(1000 * 60 * 5);
+        Thread.sleep(1000 * 60 * 4);
         return job;
     }
 

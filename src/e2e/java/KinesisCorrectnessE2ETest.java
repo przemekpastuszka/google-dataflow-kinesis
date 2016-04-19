@@ -17,29 +17,30 @@
  */
 
 import static com.google.api.client.repackaged.com.google.common.base.Strings.commonPrefix;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets.newHashSet;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.compute.model.Instance;
 import com.google.cloud.dataflow.sdk.PipelineResult;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists;
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Sets;
 import com.google.cloud.dataflow.sdk.runners.DataflowPipelineJob;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static com.jayway.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import org.hamcrest.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static java.lang.System.currentTimeMillis;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import static utils.TestUtils.pickNRandom;
 import utils.BQ;
 import utils.GCE;
 import utils.PubSubUploader;
@@ -115,10 +116,13 @@ public class KinesisCorrectnessE2ETest {
             InterruptedException, IOException, TimeoutException {
         LOG.info("Sending events");
 
-        List<String> testData = TestUtils.randomStrings(40000);
-        RecordsUploader.RecordUploadFuture future = client.startUploadingRecords(testData);
-        Instance randomInstance = chooseRandomInstance(jobName);
+        List<String> testData = TestUtils.randomStrings(100000);
 
+        RecordsUploader.RecordUploadFuture future = client.startUploadingRecords(testData);
+        await().atMost(1, TimeUnit.MINUTES).until(
+                setOfDataInBigQuery(), is(not(Matchers.<String>empty())));
+
+        Instance randomInstance = chooseRandomInstance(jobName);
         GCE.get().stopInstance(randomInstance);
 
         future.waitForFinish(Long.MAX_VALUE);
@@ -153,41 +157,21 @@ public class KinesisCorrectnessE2ETest {
         return currentDataflowInstances;
     }
 
-
     private void verifyDataPresentInBigQuery(List<String> testData, long timeout) throws
             IOException,
             InterruptedException {
-        LOG.info("Waiting for pipeline to process all sent data");
 
-        long sleepPeriod = TimeUnit.SECONDS.toMillis(30);
-        long startTime = currentTimeMillis();
-        AssertionError lastException = null;
-        while (currentTimeMillis() - startTime <= timeout) {
-            try {
-                verifySingleDataInBigQuery(testData);
-                return;
-            } catch (AssertionError e) {
-                lastException = e;
-                LOG.warn("Data in BigQuery not yet ready");
-                Thread.sleep(sleepPeriod);
-            }
-        }
-        throw lastException;
+        Set<String> testDataSet = new HashSet<>(testData);
+        await().atMost(timeout, TimeUnit.MILLISECONDS).
+                until(setOfDataInBigQuery(), equalTo(testDataSet));
     }
 
-    private void verifySingleDataInBigQuery(List<String> testData) throws IOException {
-        LOG.info("Veryfing result in BigQuery");
-        List<String> dataFromBQ = BQ.get().readAllFrom(testTable);
-        HashSet<String> setOfExpectedData = newHashSet(testData);
-        HashSet<String> setOfDataInBQ = newHashSet(dataFromBQ);
-
-        Set<String> dataNotInBQ = Sets.difference(setOfExpectedData, setOfDataInBQ);
-//        Set<String> redundantDataInBQ = Sets.difference(setOfDataInBQ, setOfExpectedData);
-
-        assertThat(dataNotInBQ).
-                overridingErrorMessage(String.format("%s records missing in BQ: %s...",
-                        dataNotInBQ.size(), pickNRandom(dataNotInBQ, 30))).
-                isEmpty();
-//        assertThat(redundantDataInBQ).isEmpty();
+    private Callable<Set<String>> setOfDataInBigQuery() throws IOException {
+        return new Callable<Set<String>>() {
+            @Override
+            public Set<String> call() throws Exception {
+                return new HashSet<>(BQ.get().readAllFrom(testTable));
+            }
+        };
     }
 }

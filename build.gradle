@@ -52,6 +52,7 @@ dependencies {
     compile 'com.amazonaws:aws-java-sdk-kinesis:1.10.40'
     compile 'com.amazonaws:amazon-kinesis-client:1.6.1'
 
+    e2eCompile 'com.jayway.awaitility:awaitility:1.7.0'
     e2eCompile 'com.google.apis:google-api-services-compute:v1-rev91-1.21.0'
     e2eCompile sourceSets.integration.output
 
