@@ -17,7 +17,6 @@
  */
 package com.google.cloud.dataflow.sdk.io.kinesis.source;
 
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets.UTF_8;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
@@ -35,7 +34,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import static java.util.Arrays.asList;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 
 /**

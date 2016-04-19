@@ -17,7 +17,6 @@
  */
 package com.google.cloud.dataflow.sdk.io;
 
-import com.amazonaws.services.kinesis.model.Record;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.KinesisSource;
 import com.google.cloud.dataflow.sdk.transforms.PTransform;
@@ -29,6 +28,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
+import com.amazonaws.services.kinesis.model.Record;
 
 /**
  * {@link PTransform}s for reading from
@@ -63,7 +63,7 @@ public class KinesisIO {
          * suite your needs.
          */
         public com.google.cloud.dataflow.sdk.io.Read.Unbounded<Record> using
-                (KinesisClientProvider kinesisClientProvider) {
+        (KinesisClientProvider kinesisClientProvider) {
             return com.google.cloud.dataflow.sdk.io.Read.from(
                     new KinesisSource(kinesisClientProvider, streamName,
                             initialPosition));

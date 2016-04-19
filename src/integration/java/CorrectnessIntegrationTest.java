@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit;
 import static utils.TestUtils.getTestKinesisClientProvider;
 import utils.TestConfiguration;
 import utils.TestUtils;
-import utils.kinesis.RecordsUploader;
 import utils.kinesis.KinesisUploaderProvider;
+import utils.kinesis.RecordsUploader;
 
 /***
  *

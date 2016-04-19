@@ -17,21 +17,22 @@
  */
 package com.google.cloud.dataflow.sdk.io.kinesis.source;
 
-import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
+        .checkNotNull;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues
+        .newArrayDeque;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.GetKinesisRecordsResult;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
+
+import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Deque;
-
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions.checkNotNull;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues.newArrayDeque;
 
 /***
  * Iterates over records in a single shard.

@@ -17,6 +17,7 @@
  */
 package utils;
 
+import static com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -24,13 +25,18 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Lists;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.BigqueryScopes;
-import com.google.api.services.bigquery.model.*;
+import com.google.api.services.bigquery.model.GetQueryResultsResponse;
+import com.google.api.services.bigquery.model.Job;
+import com.google.api.services.bigquery.model.QueryRequest;
+import com.google.api.services.bigquery.model.QueryResponse;
+import com.google.api.services.bigquery.model.Table;
+import com.google.api.services.bigquery.model.TableReference;
+import com.google.api.services.bigquery.model.TableRow;
+import com.google.api.services.bigquery.model.TableSchema;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
-import static com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport;
 
 /**
  * Created by ppastuszka on 14.12.15.
@@ -91,12 +97,12 @@ public class BQ {
         List<TableRow> rows = Lists.newArrayList();
         String jobReference = response.getJobReference().getJobId();
 
-        if(!response.getJobComplete()) {
+        if (!response.getJobComplete()) {
             Job job;
             do {
                 job = bigquery.jobs().get(reference.getProjectId(), jobReference).execute();
-            } while(Arrays.asList("PENDING", "RUNNING").contains(job.getStatus().getState()));
-            if(job.getStatus().getState().equals("ERROR")) {
+            } while (Arrays.asList("PENDING", "RUNNING").contains(job.getStatus().getState()));
+            if (job.getStatus().getState().equals("ERROR")) {
                 throw new RuntimeException(job.getStatus().toString());
             }
         }
@@ -104,14 +110,15 @@ public class BQ {
         String pageToken = null;
         do {
             GetQueryResultsResponse rowsResponse =
-                    bigquery.jobs().getQueryResults(reference.getProjectId(), jobReference).setPageToken(pageToken).execute();
+                    bigquery.jobs().getQueryResults(reference.getProjectId(), jobReference)
+                            .setPageToken(pageToken).execute();
 
             pageToken = rowsResponse.getPageToken();
 
             if (rowsResponse.getRows() != null) {
                 rows.addAll(rowsResponse.getRows());
             }
-        } while(pageToken != null);
+        } while (pageToken != null);
 
         List<String> columnValues = Lists.newArrayList();
         for (TableRow row : rows) {
