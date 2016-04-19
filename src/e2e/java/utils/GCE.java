@@ -72,7 +72,7 @@ public class GCE {
     }
 
     public void stopInstance(Instance instance) throws IOException, InterruptedException {
-        LOG.info("Stopping instance {}", instance);
+        LOG.info("Stopping instance {}", instance.getName());
         String[] zoneNameParts = instance.getZone().split("/");
         String zone = zoneNameParts[zoneNameParts.length - 1];
         String project = zoneNameParts[zoneNameParts.length - 3];
@@ -80,11 +80,11 @@ public class GCE {
 
         waitUntilDone(project, zone, response);
 
-        LOG.info("Instance {} stopped", instance);
+        LOG.info("Instance {} stopped", instance.getName());
     }
 
     public void startInstance(Instance instance) throws IOException, InterruptedException {
-        LOG.info("Starting instance {}", instance);
+        LOG.info("Starting instance {}", instance.getName());
         String[] zoneNameParts = instance.getZone().split("/");
         String zone = zoneNameParts[zoneNameParts.length - 1];
         String project = zoneNameParts[zoneNameParts.length - 3];
@@ -92,7 +92,7 @@ public class GCE {
                 (project, zone, instance.getName()).execute();
 
         waitUntilDone(project, zone, response);
-        LOG.info("Instance {} started", instance);
+        LOG.info("Instance {} started", instance.getName());
     }
 
     private void waitUntilDone(String project, String zone, Operation operation) throws IOException,
