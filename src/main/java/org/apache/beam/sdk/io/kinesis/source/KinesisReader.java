@@ -24,6 +24,7 @@ import org.apache.beam.sdk.io.UnboundedSource;
 import org.apache.beam.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import org.apache.beam.sdk.io.kinesis.client.response.KinesisRecord;
 import org.apache.beam.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
+import org.apache.beam.sdk.io.kinesis.source.checkpoint.PositionInShard;
 import org.apache.beam.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
 import org.apache.beam.sdk.io.kinesis.source.checkpoint.generator.CheckpointGenerator;
 import org.apache.beam.sdk.io.kinesis.utils.RoundRobin;

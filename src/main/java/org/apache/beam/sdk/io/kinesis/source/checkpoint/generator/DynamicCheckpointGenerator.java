@@ -17,16 +17,17 @@
  */
 package org.apache.beam.sdk.io.kinesis.source.checkpoint.generator;
 
-import static org.apache.beam.sdk.repackaged.com.google.common.collect.Iterables.transform;
 import org.apache.beam.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import org.apache.beam.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
+import org.apache.beam.sdk.io.kinesis.source.checkpoint.PositionInShard;
 import org.apache.beam.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
-import org.apache.beam.sdk.repackaged.com.google.common.base.Function;
 import static com.google.api.client.repackaged.com.google.common.base.Preconditions.checkNotNull;
+import com.google.api.client.util.Lists;
 
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.model.Shard;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Creates {@link KinesisReaderCheckpoint}, which spans over all shards in given stream.
@@ -45,15 +46,17 @@ public class DynamicCheckpointGenerator implements CheckpointGenerator {
     }
 
     @Override
-    public KinesisReaderCheckpoint generate(SimplifiedKinesisClient kinesis) throws IOException {
-        return new KinesisReaderCheckpoint(
-                transform(kinesis.listShards(streamName), new Function<Shard, ShardCheckpoint>() {
-                    @Override
-                    public ShardCheckpoint apply(Shard shard) {
-                        return new ShardCheckpoint(streamName, shard.getShardId(), startPosition);
-                    }
-                })
-        );
+    public KinesisReaderCheckpoint generate(final SimplifiedKinesisClient kinesis) throws
+            IOException {
+        List<ShardCheckpoint> shardCheckpoints = Lists.newArrayList();
+
+        for (Shard shard : kinesis.listShards(streamName)) {
+            ShardCheckpoint checkpoint = new ShardCheckpoint(
+                    new PositionInShard(streamName, shard.getShardId(), startPosition), kinesis);
+            shardCheckpoints.add(checkpoint);
+        }
+
+        return new KinesisReaderCheckpoint(shardCheckpoints);
     }
 
     @Override

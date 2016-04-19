@@ -42,7 +42,7 @@ import java.io.IOException;
  *
  */
 @RunWith(MockitoJUnitRunner.class)
-public class ShardCheckpointTest {
+public class PositionInShardTest {
     public static final String AT_SEQUENCE_SHARD_IT = "AT_SEQUENCE_SHARD_IT";
     public static final String AFTER_SEQUENCE_SHARD_IT = "AFTER_SEQUENCE_SHARD_IT";
     private static final String STREAM_NAME = "STREAM";
@@ -62,23 +62,23 @@ public class ShardCheckpointTest {
 
     @Test
     public void testProvidingShardIterator() throws IOException {
-        assertThat(checkpoint(AT_SEQUENCE_NUMBER, "100", null).getShardIterator(client))
+        assertThat(checkpoint(AT_SEQUENCE_NUMBER, "100", null).obtainShardIterator(client))
                 .isEqualTo(AT_SEQUENCE_SHARD_IT);
-        assertThat(checkpoint(AFTER_SEQUENCE_NUMBER, "100", null).getShardIterator(client))
+        assertThat(checkpoint(AFTER_SEQUENCE_NUMBER, "100", null).obtainShardIterator(client))
                 .isEqualTo(AFTER_SEQUENCE_SHARD_IT);
-        assertThat(checkpoint(AT_SEQUENCE_NUMBER, "100", 10L).getShardIterator(client)).isEqualTo
+        assertThat(checkpoint(AT_SEQUENCE_NUMBER, "100", 10L).obtainShardIterator(client)).isEqualTo
                 (AT_SEQUENCE_SHARD_IT);
-        assertThat(checkpoint(AFTER_SEQUENCE_NUMBER, "100", 10L).getShardIterator(client))
+        assertThat(checkpoint(AFTER_SEQUENCE_NUMBER, "100", 10L).obtainShardIterator(client))
                 .isEqualTo(AT_SEQUENCE_SHARD_IT);
     }
 
     @Test
     public void testComparisonWithExtendedSequenceNumber() {
-        assertThat(new ShardCheckpoint("", "", LATEST).isBeforeOrAt(
+        assertThat(new PositionInShard("", "", LATEST).isBeforeOrAt(
                 new ExtendedSequenceNumber("100", 0L)
         )).isTrue();
 
-        assertThat(new ShardCheckpoint("", "", TRIM_HORIZON).isBeforeOrAt(
+        assertThat(new PositionInShard("", "", TRIM_HORIZON).isBeforeOrAt(
                 new ExtendedSequenceNumber("100", 0L)
         )).isTrue();
 
@@ -103,9 +103,9 @@ public class ShardCheckpointTest {
         )).isFalse();
     }
 
-    private ShardCheckpoint checkpoint(ShardIteratorType iteratorType, String sequenceNumber,
+    private PositionInShard checkpoint(ShardIteratorType iteratorType, String sequenceNumber,
                                        Long subSequenceNumber) {
-        return new ShardCheckpoint(STREAM_NAME, SHARD_ID, iteratorType, sequenceNumber,
+        return new PositionInShard(STREAM_NAME, SHARD_ID, iteratorType, sequenceNumber,
                 subSequenceNumber);
     }
 }

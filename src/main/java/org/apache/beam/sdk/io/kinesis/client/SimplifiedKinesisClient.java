@@ -115,6 +115,7 @@ public class SimplifiedKinesisClient {
                         .withLimit(limit));
                 return new GetKinesisRecordsResult(
                         UserRecord.deaggregate(response.getRecords()),
+                        shardIterator,
                         response.getNextShardIterator());
             }
         });

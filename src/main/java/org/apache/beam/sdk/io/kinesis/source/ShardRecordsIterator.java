@@ -24,6 +24,7 @@ import static org.apache.beam.sdk.repackaged.com.google.common.collect.Queues
 import org.apache.beam.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import org.apache.beam.sdk.io.kinesis.client.response.GetKinesisRecordsResult;
 import org.apache.beam.sdk.io.kinesis.client.response.KinesisRecord;
+import org.apache.beam.sdk.io.kinesis.source.checkpoint.PositionInShard;
 import org.apache.beam.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
 import org.apache.beam.sdk.repackaged.com.google.common.base.CustomOptional;
 import org.apache.beam.sdk.repackaged.com.google.common.base.Optional;
@@ -45,7 +46,7 @@ public class ShardRecordsIterator {
     private final SimplifiedKinesisClient kinesis;
     private final RecordFilter filter;
     private ShardCheckpoint checkpoint;
-    private String shardIterator;
+    private String nextShardIterator;
     private Deque<KinesisRecord> data = newArrayDeque();
 
     public ShardRecordsIterator(final ShardCheckpoint initialCheckpoint,
@@ -64,8 +65,9 @@ public class ShardRecordsIterator {
         this.checkpoint = initialCheckpoint;
         this.filter = filter;
         this.kinesis = simplifiedKinesisClient;
-        shardIterator = checkpoint.getShardIterator(kinesis);
+        nextShardIterator = checkpoint.getShardIterator();
     }
+
 
     /***
      * Returns record if there's any present.
@@ -87,14 +89,15 @@ public class ShardRecordsIterator {
         if (data.isEmpty()) {
             GetKinesisRecordsResult response;
             try {
-                response = kinesis.getRecords(shardIterator);
+                response = kinesis.getRecords(nextShardIterator);
             } catch (ExpiredIteratorException e) {
                 LOG.info("Refreshing expired iterator", e);
-                shardIterator = checkpoint.getShardIterator(kinesis);
-                response = kinesis.getRecords(shardIterator);
+                checkpoint = checkpoint.renewShardIterator(kinesis);
+                nextShardIterator = checkpoint.getShardIterator();
+                response = kinesis.getRecords(nextShardIterator);
             }
             LOG.debug("Fetched {} new records", response.getRecords().size());
-            shardIterator = response.getNextShardIterator();
+            nextShardIterator = response.getNextShardIterator();
             data.addAll(filter.apply(response.getRecords(), checkpoint));
         }
     }

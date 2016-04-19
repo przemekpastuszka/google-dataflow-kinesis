@@ -147,7 +147,7 @@ public class TestUtils {
                 apply(KinesisIO.Read.
                         from(
                                 TestConfiguration.get().getTestKinesisStream(),
-                                InitialPositionInStream.TRIM_HORIZON).
+                                InitialPositionInStream.LATEST).
                         using(getTestKinesisClientProvider())).
                 apply(ParDo.of(new RecordDataToString()));
 

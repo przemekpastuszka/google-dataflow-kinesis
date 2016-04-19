@@ -26,11 +26,14 @@ import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
  * {@link UserRecord} enhanced with utility methods.
  */
 public class KinesisRecord extends UserRecord {
-    public KinesisRecord(UserRecord record) {
+    private final String shardIterator;
+
+    public KinesisRecord(UserRecord record, String shardIterator) {
         super(record.isAggregated(),
                 record,
                 record.getSubSequenceNumber(),
                 record.getExplicitHashKey());
+        this.shardIterator = shardIterator;
     }
 
     public ExtendedSequenceNumber getExtendedSequenceNumber() {
@@ -42,5 +45,9 @@ public class KinesisRecord extends UserRecord {
      */
     public byte[] getUniqueId() {
         return getExtendedSequenceNumber().toString().getBytes(Charsets.UTF_8);
+    }
+
+    public String getShardIterator() {
+        return shardIterator;
     }
 }
