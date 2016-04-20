@@ -70,7 +70,7 @@ public class KinesisCorrectnessE2ETest {
     @AfterMethod
     public void tearDown() throws IOException, InterruptedException {
         LOG.info("Deleting table" + testTable);
-//        BQ.get().deleteTableIfExists(testTable);
+        BQ.get().deleteTableIfExists(testTable);
         if (job != null) {
             job.cancel();
             while (job.getState() != PipelineResult.State.CANCELLED) {

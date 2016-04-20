@@ -28,8 +28,8 @@ public class KinesisUploaderProvider {
     @DataProvider
     public static Object[][] provide() {
         return new RecordsUploader[][]{
-                new RecordsUploader[]{new KinesisProducerLibraryUploader()},
-                new RecordsUploader[]{new OldStyleKinesisUploader()}
+                new RecordsUploader[]{new KinesisProducerLibraryUploader()}
+//                new RecordsUploader[]{new OldStyleKinesisUploader()}
         };
     }
 }
