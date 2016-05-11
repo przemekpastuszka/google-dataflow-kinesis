@@ -21,30 +21,38 @@ import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 
 import static com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream
         .LATEST;
-import static com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream
-        .TRIM_HORIZON;
+import static com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream.TRIM_HORIZON;
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.AFTER_SEQUENCE_NUMBER;
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.AT_SEQUENCE_NUMBER;
-import com.amazonaws.services.kinesis.clientlibrary.types.ExtendedSequenceNumber;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
-import static org.fest.assertions.Assertions.assertThat;
+
+import static com.amazonaws.services.kinesis.model.ShardIteratorType.AT_TIMESTAMP;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
+import com.amazonaws.services.kinesis.clientlibrary.types.ExtendedSequenceNumber;
+import com.amazonaws.services.kinesis.model.ShardIteratorType;
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import java.io.IOException;
+import java.util.Date;
 
 /**
  *
  */
 @RunWith(MockitoJUnitRunner.class)
 public class ShardCheckpointTest {
-    public static final String AT_SEQUENCE_SHARD_IT = "AT_SEQUENCE_SHARD_IT";
-    public static final String AFTER_SEQUENCE_SHARD_IT = "AFTER_SEQUENCE_SHARD_IT";
+    private static final String AT_SEQUENCE_SHARD_IT = "AT_SEQUENCE_SHARD_IT";
+    private static final String AFTER_SEQUENCE_SHARD_IT = "AFTER_SEQUENCE_SHARD_IT";
     private static final String STREAM_NAME = "STREAM";
     private static final String SHARD_ID = "SHARD_ID";
     @Mock
@@ -53,10 +61,12 @@ public class ShardCheckpointTest {
     @Before
     public void setUp() throws IOException {
         when(client.getShardIterator(
-                eq(STREAM_NAME), eq(SHARD_ID), eq(AT_SEQUENCE_NUMBER), anyString())).
+                eq(STREAM_NAME), eq(SHARD_ID), eq(AT_SEQUENCE_NUMBER),
+                anyString(), isNull(Date.class))).
                 thenReturn(AT_SEQUENCE_SHARD_IT);
         when(client.getShardIterator(
-                eq(STREAM_NAME), eq(SHARD_ID), eq(AFTER_SEQUENCE_NUMBER), anyString())).
+                eq(STREAM_NAME), eq(SHARD_ID), eq(AFTER_SEQUENCE_NUMBER),
+                anyString(), isNull(Date.class))).
                 thenReturn(AFTER_SEQUENCE_SHARD_IT);
     }
 
@@ -74,38 +84,71 @@ public class ShardCheckpointTest {
 
     @Test
     public void testComparisonWithExtendedSequenceNumber() {
-        assertThat(new ShardCheckpoint("", "", LATEST).isBeforeOrAt(
-                new ExtendedSequenceNumber("100", 0L)
+        assertThat(new ShardCheckpoint("", "", new StartingPoint(LATEST)).isBeforeOrAt(
+                recordWith(new ExtendedSequenceNumber("100", 0L))
         )).isTrue();
 
-        assertThat(new ShardCheckpoint("", "", TRIM_HORIZON).isBeforeOrAt(
-                new ExtendedSequenceNumber("100", 0L)
+        assertThat(new ShardCheckpoint("", "", new StartingPoint(TRIM_HORIZON)).isBeforeOrAt(
+                recordWith(new ExtendedSequenceNumber("100", 0L))
         )).isTrue();
 
         assertThat(checkpoint(AFTER_SEQUENCE_NUMBER, "10", 1L).isBeforeOrAt(
-                new ExtendedSequenceNumber("100", 0L)
+                recordWith(new ExtendedSequenceNumber("100", 0L))
         )).isTrue();
 
         assertThat(checkpoint(AT_SEQUENCE_NUMBER, "100", 0L).isBeforeOrAt(
-                new ExtendedSequenceNumber("100", 0L)
+                recordWith(new ExtendedSequenceNumber("100", 0L))
         )).isTrue();
 
         assertThat(checkpoint(AFTER_SEQUENCE_NUMBER, "100", 0L).isBeforeOrAt(
-                new ExtendedSequenceNumber("100", 0L)
+                recordWith(new ExtendedSequenceNumber("100", 0L))
         )).isFalse();
 
         assertThat(checkpoint(AT_SEQUENCE_NUMBER, "100", 1L).isBeforeOrAt(
-                new ExtendedSequenceNumber("100", 0L)
+                recordWith(new ExtendedSequenceNumber("100", 0L))
         )).isFalse();
 
         assertThat(checkpoint(AFTER_SEQUENCE_NUMBER, "100", 0L).isBeforeOrAt(
-                new ExtendedSequenceNumber("99", 1L)
+                recordWith(new ExtendedSequenceNumber("99", 1L))
         )).isFalse();
+    }
+
+    @Test
+    public void testComparisonWithTimestamp() {
+        DateTime referenceTimestamp = DateTime.now();
+
+        assertThat(checkpoint(AT_TIMESTAMP, referenceTimestamp.toDate())
+                .isBeforeOrAt(recordWith(referenceTimestamp.minusMillis(10).toDate()))
+        ).isFalse();
+
+        assertThat(checkpoint(AT_TIMESTAMP, referenceTimestamp.toDate())
+                .isBeforeOrAt(recordWith(referenceTimestamp.toDate()))
+        ).isTrue();
+
+        assertThat(checkpoint(AT_TIMESTAMP, referenceTimestamp.toDate())
+                .isBeforeOrAt(recordWith(referenceTimestamp.plusMillis(10).toDate()))
+        ).isTrue();
+    }
+
+    private KinesisRecord recordWith(ExtendedSequenceNumber extendedSequenceNumber) {
+        KinesisRecord record = mock(KinesisRecord.class);
+        given(record.getExtendedSequenceNumber()).willReturn(extendedSequenceNumber);
+        return record;
     }
 
     private ShardCheckpoint checkpoint(ShardIteratorType iteratorType, String sequenceNumber,
                                        Long subSequenceNumber) {
         return new ShardCheckpoint(STREAM_NAME, SHARD_ID, iteratorType, sequenceNumber,
                 subSequenceNumber);
+    }
+
+    private KinesisRecord recordWith(Date approximateArrivalTimestamp) {
+        KinesisRecord record = mock(KinesisRecord.class);
+        given(record.getApproximateArrivalTimestamp()).willReturn(approximateArrivalTimestamp);
+        return record;
+    }
+
+    private ShardCheckpoint checkpoint(ShardIteratorType iteratorType, Date timestamp) {
+        return new ShardCheckpoint(STREAM_NAME, SHARD_ID, iteratorType, timestamp);
     }
 }

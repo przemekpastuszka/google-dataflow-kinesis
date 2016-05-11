@@ -19,7 +19,7 @@ package com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint;
 
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Iterables;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

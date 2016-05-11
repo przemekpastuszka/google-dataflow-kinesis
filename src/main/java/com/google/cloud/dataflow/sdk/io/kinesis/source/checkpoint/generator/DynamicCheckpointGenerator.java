@@ -23,9 +23,9 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StartingPoint;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Function;
 
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.model.Shard;
 import java.io.IOException;
 
@@ -35,14 +35,14 @@ import java.io.IOException;
  */
 public class DynamicCheckpointGenerator implements CheckpointGenerator {
     private final String streamName;
-    private final InitialPositionInStream startPosition;
+    private final StartingPoint startingPoint;
 
-    public DynamicCheckpointGenerator(String streamName, InitialPositionInStream startPosition) {
+    public DynamicCheckpointGenerator(String streamName, StartingPoint startingPoint) {
         checkNotNull(streamName);
-        checkNotNull(startPosition);
+        checkNotNull(startingPoint);
 
         this.streamName = streamName;
-        this.startPosition = startPosition;
+        this.startingPoint = startingPoint;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class DynamicCheckpointGenerator implements CheckpointGenerator {
                 transform(kinesis.listShards(streamName), new Function<Shard, ShardCheckpoint>() {
                     @Override
                     public ShardCheckpoint apply(Shard shard) {
-                        return new ShardCheckpoint(streamName, shard.getShardId(), startPosition);
+                        return new ShardCheckpoint(streamName, shard.getShardId(), startingPoint);
                     }
                 })
         );
@@ -59,6 +59,6 @@ public class DynamicCheckpointGenerator implements CheckpointGenerator {
 
     @Override
     public String toString() {
-        return String.format("Checkpoint generator for %s: %s", streamName, startPosition);
+        return String.format("Checkpoint generator for %s: %s", streamName, startingPoint);
     }
 }

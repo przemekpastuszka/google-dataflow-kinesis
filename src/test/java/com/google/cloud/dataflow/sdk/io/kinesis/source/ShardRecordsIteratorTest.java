@@ -17,6 +17,13 @@
  */
 package com.google.cloud.dataflow.sdk.io.kinesis.source;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Mockito.when;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.GetKinesisRecordsResult;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
@@ -25,10 +32,7 @@ import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOpt
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
 import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
-import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Mockito.when;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +40,6 @@ import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
-import static java.util.Arrays.asList;
 import java.io.IOException;
 import java.util.Collections;
 
@@ -45,10 +48,10 @@ import java.util.Collections;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class ShardRecordsIteratorTest {
-    public static final String INITIAL_ITERATOR = "INITIAL_ITERATOR";
-    public static final String SECOND_ITERATOR = "SECOND_ITERATOR";
-    public static final String SECOND_REFRESHED_ITERATOR = "SECOND_REFRESHED_ITERATOR";
-    public static final String THIRD_ITERATOR = "THIRD_ITERATOR";
+    private static final String INITIAL_ITERATOR = "INITIAL_ITERATOR";
+    private static final String SECOND_ITERATOR = "SECOND_ITERATOR";
+    private static final String SECOND_REFRESHED_ITERATOR = "SECOND_REFRESHED_ITERATOR";
+    private static final String THIRD_ITERATOR = "THIRD_ITERATOR";
 
     @Mock
     private SimplifiedKinesisClient kinesisClient;
@@ -101,7 +104,7 @@ public class ShardRecordsIteratorTest {
     @Test
     public void goesThroughAvailableRecords() throws IOException {
         when(firstResult.getRecords()).thenReturn(asList(a, b, c));
-        when(secondResult.getRecords()).thenReturn(asList(d));
+        when(secondResult.getRecords()).thenReturn(singletonList(d));
 
         assertThat(iterator.getCheckpoint()).isEqualTo(firstCheckpoint);
         assertThat(iterator.next()).isEqualTo(Optional.of(a));
@@ -118,8 +121,8 @@ public class ShardRecordsIteratorTest {
 
     @Test
     public void refreshesExpiredIterator() throws IOException {
-        when(firstResult.getRecords()).thenReturn(asList(a));
-        when(secondResult.getRecords()).thenReturn(asList(b));
+        when(firstResult.getRecords()).thenReturn(singletonList(a));
+        when(secondResult.getRecords()).thenReturn(singletonList(b));
 
         when(kinesisClient.getRecords(SECOND_ITERATOR)).thenThrow(ExpiredIteratorException.class);
         when(aCheckpoint.getShardIterator(kinesisClient)).thenReturn(SECOND_REFRESHED_ITERATOR);

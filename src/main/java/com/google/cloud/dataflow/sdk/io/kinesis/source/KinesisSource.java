@@ -26,6 +26,7 @@ import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StartingPoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator.CheckpointGenerator;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator
         .DynamicCheckpointGenerator;
@@ -33,7 +34,6 @@ import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator
         .StaticCheckpointGenerator;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.model.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +50,8 @@ public class KinesisSource extends UnboundedSource<Record, KinesisReaderCheckpoi
     private CheckpointGenerator initialCheckpointGenerator;
 
     public KinesisSource(KinesisClientProvider kinesis, String streamName,
-                         InitialPositionInStream initialPositionInStream) {
-        this(kinesis, new DynamicCheckpointGenerator(streamName, initialPositionInStream));
+                         StartingPoint startingPoint) {
+        this(kinesis, new DynamicCheckpointGenerator(streamName, startingPoint));
     }
 
     private KinesisSource(KinesisClientProvider kinesisClientProvider,

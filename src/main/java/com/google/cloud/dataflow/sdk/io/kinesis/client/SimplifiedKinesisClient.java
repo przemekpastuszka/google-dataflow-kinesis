@@ -19,21 +19,24 @@ package com.google.cloud.dataflow.sdk.io.kinesis.client;
 
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.GetKinesisRecordsResult;
 import com.google.common.collect.Lists;
-
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import com.amazonaws.services.kinesis.model.ExpiredIteratorException;
 import com.amazonaws.services.kinesis.model.GetRecordsRequest;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
+import com.amazonaws.services.kinesis.model.GetShardIteratorRequest;
 import com.amazonaws.services.kinesis.model.LimitExceededException;
 import com.amazonaws.services.kinesis.model.ProvisionedThroughputExceededException;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.model.StreamDescription;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -56,13 +59,18 @@ public class SimplifiedKinesisClient {
 
     public String getShardIterator(final String streamName, final String shardId,
                                    final ShardIteratorType shardIteratorType,
-                                   final String startingSequenceNumber) throws IOException {
+                                   final String startingSequenceNumber, final Date timestamp)
+            throws IOException {
         return wrapExceptions(new Callable<String>() {
             @Override
             public String call() throws Exception {
-                return kinesis.getShardIterator(
-                        streamName, shardId, shardIteratorType.toString(), startingSequenceNumber)
-                        .getShardIterator();
+                return kinesis.getShardIterator(new GetShardIteratorRequest()
+                        .withStreamName(streamName)
+                        .withShardId(shardId)
+                        .withShardIteratorType(shardIteratorType)
+                        .withStartingSequenceNumber(startingSequenceNumber)
+                        .withTimestamp(timestamp)
+                ).getShardIterator();
             }
         });
     }

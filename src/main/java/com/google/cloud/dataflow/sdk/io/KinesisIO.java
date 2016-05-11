@@ -19,6 +19,7 @@ package com.google.cloud.dataflow.sdk.io;
 
 import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.KinesisSource;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StartingPoint;
 import com.google.cloud.dataflow.sdk.transforms.PTransform;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -29,6 +30,8 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.model.Record;
+
+import java.util.Date;
 
 /**
  * {@link PTransform}s for reading from
@@ -41,9 +44,9 @@ public class KinesisIO {
     public static class Read {
 
         private final String streamName;
-        private final InitialPositionInStream initialPosition;
+        private final StartingPoint initialPosition;
 
-        private Read(String streamName, InitialPositionInStream initialPosition) {
+        private Read(String streamName, StartingPoint initialPosition) {
             this.streamName = streamName;
             this.initialPosition = initialPosition;
         }
@@ -52,7 +55,11 @@ public class KinesisIO {
          * Specify reading from streamName at some initial position.
          */
         public static Read from(String streamName, InitialPositionInStream initialPosition) {
-            return new Read(streamName, initialPosition);
+            return new Read(streamName, new StartingPoint(initialPosition));
+        }
+
+        public static Read from(String streamName, Date initialTimestamp) {
+            return new Read(streamName, new StartingPoint(initialTimestamp));
         }
 
         /***

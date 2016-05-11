@@ -26,7 +26,7 @@ import com.google.cloud.dataflow.sdk.transforms.ParDo;
 import com.google.cloud.dataflow.sdk.values.PCollection;
 
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +52,7 @@ public class CorrectnessIntegrationTest {
     private static final long PIPELINE_STARTUP_TIME = TimeUnit.SECONDS.toMillis(10);
     private static final long ADDITIONAL_PROCESSING_TIME = TimeUnit.SECONDS.toMillis(60);
     private static final long RECORD_GENERATION_TIMEOUT = TimeUnit.SECONDS.toMillis(35);
-    public static final long TOTAL_PROCESSING_TIME = PIPELINE_STARTUP_TIME +
+    private static final long TOTAL_PROCESSING_TIME = PIPELINE_STARTUP_TIME +
             RECORD_GENERATION_TIMEOUT +
             ADDITIONAL_PROCESSING_TIME;
     private ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();

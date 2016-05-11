@@ -17,22 +17,23 @@
  */
 package com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint;
 
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
-        .checkArgument;
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
-        .checkNotNull;
-import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
-import com.google.cloud.dataflow.sdk.io.kinesis.source.ShardRecordsIterator;
-
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions.checkArgument;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions.checkNotNull;
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.AFTER_SEQUENCE_NUMBER;
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.AT_SEQUENCE_NUMBER;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
+import static com.amazonaws.services.kinesis.model.ShardIteratorType.AT_TIMESTAMP;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
+import com.google.cloud.dataflow.sdk.io.kinesis.source.ShardRecordsIterator;
 import com.amazonaws.services.kinesis.clientlibrary.types.ExtendedSequenceNumber;
 import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
 import com.amazonaws.services.kinesis.model.Record;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
+
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Date;
+
 
 /***
  * Checkpoint mark for single shard in the stream.
@@ -53,22 +54,27 @@ public class ShardCheckpoint implements Serializable {
     private final String sequenceNumber;
     private final ShardIteratorType shardIteratorType;
     private final Long subSequenceNumber;
+    private final Date timestamp;
 
-    public ShardCheckpoint(String streamName, String shardId, InitialPositionInStream
-            initialPositionInStream) {
-
-        this(streamName, shardId, ShardIteratorType.fromValue(initialPositionInStream.name()),
-                null);
+    public ShardCheckpoint(String streamName, String shardId, StartingPoint
+            startingPoint) {
+        this(streamName, shardId,
+                ShardIteratorType.fromValue(startingPoint.getPositionName()),
+                startingPoint.getTimestamp());
     }
 
     public ShardCheckpoint(String streamName, String shardId, ShardIteratorType
-            shardIteratorType, String sequenceNumber) {
-        this(streamName, shardId, shardIteratorType, sequenceNumber, null);
+            shardIteratorType, Date timestamp) {
+        this(streamName, shardId, shardIteratorType, null, null, timestamp);
     }
 
     public ShardCheckpoint(String streamName, String shardId, ShardIteratorType
             shardIteratorType, String sequenceNumber, Long subSequenceNumber) {
+        this(streamName, shardId, shardIteratorType, sequenceNumber, subSequenceNumber, null);
+    }
 
+    private ShardCheckpoint(String streamName, String shardId, ShardIteratorType shardIteratorType,
+                            String sequenceNumber, Long subSequenceNumber, Date timestamp) {
         checkNotNull(streamName);
         checkNotNull(shardId);
         checkNotNull(shardIteratorType);
@@ -78,7 +84,15 @@ public class ShardCheckpoint implements Serializable {
                             " or AFTER_SEQUENCE_NUMBER");
         } else {
             checkArgument(sequenceNumber == null,
-                    "Sequence number must be null for LATEST or TRIM_HORIZON");
+                    "Sequence number must be null for LATEST, TRIM_HORIZON or AT_TIMESTAMP");
+        }
+        if (shardIteratorType == AT_TIMESTAMP) {
+            checkNotNull(timestamp,
+                    "You must provide timestamp for AT_SEQUENCE_NUMBER" +
+                            " or AFTER_SEQUENCE_NUMBER");
+        } else {
+            checkArgument(timestamp == null,
+                    "Timestamp must be null for an iterator type other than AT_TIMESTAMP");
         }
 
         this.subSequenceNumber = subSequenceNumber;
@@ -86,16 +100,22 @@ public class ShardCheckpoint implements Serializable {
         this.streamName = streamName;
         this.shardId = shardId;
         this.sequenceNumber = sequenceNumber;
+        this.timestamp = timestamp;
     }
 
     /***
-     * Used to compare {@link ShardCheckpoint} object to {@link ExtendedSequenceNumber}.
+     * Used to compare {@link ShardCheckpoint} object to {@link KinesisRecord}. Depending
+     * on the the underlying shardIteratorType, it will either compare the timestamp or the
+     * {@link ExtendedSequenceNumber}.
      *
      * @param other
      * @return if current checkpoint mark points before or at given {@link ExtendedSequenceNumber}
      */
-    public boolean isBeforeOrAt(ExtendedSequenceNumber other) {
-        int result = extendedSequenceNumber().compareTo(other);
+    public boolean isBeforeOrAt(KinesisRecord other) {
+        if (shardIteratorType == AT_TIMESTAMP) {
+            return !timestamp.after(other.getApproximateArrivalTimestamp());
+        }
+        int result = extendedSequenceNumber().compareTo(other.getExtendedSequenceNumber());
         if (result == 0) {
             return shardIteratorType == AT_SEQUENCE_NUMBER;
         }
@@ -123,14 +143,18 @@ public class ShardCheckpoint implements Serializable {
     }
 
     public String getShardIterator(SimplifiedKinesisClient kinesisClient) throws IOException {
-        if (shardIteratorType == AFTER_SEQUENCE_NUMBER && subSequenceNumber != null) {
+        if (checkpointIsInTheMiddleOfAUserRecord()) {
             return kinesisClient.getShardIterator(streamName,
                     shardId, AT_SEQUENCE_NUMBER,
-                    sequenceNumber);
+                    sequenceNumber, null);
         }
         return kinesisClient.getShardIterator(streamName,
                 shardId, shardIteratorType,
-                sequenceNumber);
+                sequenceNumber, timestamp);
+    }
+
+    private boolean checkpointIsInTheMiddleOfAUserRecord() {
+        return shardIteratorType == AFTER_SEQUENCE_NUMBER && subSequenceNumber != null;
     }
 
     /***

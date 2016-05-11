@@ -25,7 +25,7 @@ import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator.Chec
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import org.junit.Before;
 import org.junit.Test;
