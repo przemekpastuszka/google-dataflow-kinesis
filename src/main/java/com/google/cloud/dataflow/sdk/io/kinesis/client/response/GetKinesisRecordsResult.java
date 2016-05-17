@@ -31,13 +31,14 @@ public class GetKinesisRecordsResult {
     private final List<KinesisRecord> records;
     private final String nextShardIterator;
 
-    public GetKinesisRecordsResult(List<UserRecord> records, String nextShardIterator) {
+    public GetKinesisRecordsResult(List<UserRecord> records, String nextShardIterator,
+                                   final String streamName, final String shardId) {
         this.records = transform(records, new Function<UserRecord, KinesisRecord>() {
             @Nullable
             @Override
             public KinesisRecord apply(@Nullable UserRecord input) {
                 assert input != null;  // to make FindBugs happy
-                return new KinesisRecord(input);
+                return new KinesisRecord(input, streamName, shardId);
             }
         });
         this.nextShardIterator = nextShardIterator;

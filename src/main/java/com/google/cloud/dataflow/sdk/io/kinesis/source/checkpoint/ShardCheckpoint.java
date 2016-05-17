@@ -170,4 +170,12 @@ public class ShardCheckpoint implements Serializable {
                 record.getSequenceNumber(),
                 record.getSubSequenceNumber());
     }
+
+    public String getStreamName() {
+        return streamName;
+    }
+
+    public String getShardId() {
+        return shardId;
+    }
 }

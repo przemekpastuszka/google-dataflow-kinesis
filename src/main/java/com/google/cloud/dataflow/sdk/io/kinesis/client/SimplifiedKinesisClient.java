@@ -102,8 +102,9 @@ public class SimplifiedKinesisClient {
      * @return list of deaggregated records
      * @throws IOException - in case of recoverable situation
      */
-    public GetKinesisRecordsResult getRecords(String shardIterator) throws IOException {
-        return getRecords(shardIterator, null);
+    public GetKinesisRecordsResult getRecords(String shardIterator, String streamName,
+                                              String shardId) throws IOException {
+        return getRecords(shardIterator, streamName, shardId, null);
     }
 
     /***
@@ -112,7 +113,8 @@ public class SimplifiedKinesisClient {
      * @return list of deaggregated records
      * @throws IOException - in case of recoverable situation
      */
-    public GetKinesisRecordsResult getRecords(final String shardIterator, final Integer limit)
+    public GetKinesisRecordsResult getRecords(final String shardIterator, final String streamName,
+                                              final String shardId, final Integer limit)
             throws
             IOException {
         return wrapExceptions(new Callable<GetKinesisRecordsResult>() {
@@ -123,7 +125,8 @@ public class SimplifiedKinesisClient {
                         .withLimit(limit));
                 return new GetKinesisRecordsResult(
                         UserRecord.deaggregate(response.getRecords()),
-                        response.getNextShardIterator());
+                        response.getNextShardIterator(),
+                        streamName, shardId);
             }
         });
     }

@@ -17,20 +17,40 @@
  */
 package com.google.cloud.dataflow.sdk.io.kinesis.client.response;
 
-import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Charsets;
+import com.amazonaws.services.kinesis.model.Record;
+
+import static org.apache.commons.lang.builder.EqualsBuilder.reflectionEquals;
+import static org.apache.commons.lang.builder.HashCodeBuilder.reflectionHashCode;
+
+import com.google.common.base.Charsets;
 
 import com.amazonaws.services.kinesis.clientlibrary.types.ExtendedSequenceNumber;
 import com.amazonaws.services.kinesis.clientlibrary.types.UserRecord;
+
+import java.util.Date;
 
 /**
  * {@link UserRecord} enhanced with utility methods.
  */
 public class KinesisRecord extends UserRecord {
-    public KinesisRecord(UserRecord record) {
+    private Date readTime = new Date();
+    private String streamName;
+    private String shardId;
+
+    public KinesisRecord(UserRecord record, String streamName, String shardId) {
         super(record.isAggregated(),
                 record,
                 record.getSubSequenceNumber(),
                 record.getExplicitHashKey());
+        this.streamName = streamName;
+        this.shardId = shardId;
+    }
+
+    public KinesisRecord(Record record, long subSequenceNumber, Date readTime, String streamName, String shardId) {
+        super(false, record, subSequenceNumber, null);
+        this.readTime = new Date(readTime.getTime());
+        this.streamName = streamName;
+        this.shardId = shardId;
     }
 
     public ExtendedSequenceNumber getExtendedSequenceNumber() {
@@ -42,5 +62,31 @@ public class KinesisRecord extends UserRecord {
      */
     public byte[] getUniqueId() {
         return getExtendedSequenceNumber().toString().getBytes(Charsets.UTF_8);
+    }
+
+    public Date getReadTime() {
+        return new Date(readTime.getTime());
+    }
+
+    public String getStreamName() {
+        return streamName;
+    }
+
+    public String getShardId() {
+        return shardId;
+    }
+
+    public byte[] getDataAsBytes() {
+        return getData().array();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return reflectionEquals(this, obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return reflectionHashCode(this);
     }
 }

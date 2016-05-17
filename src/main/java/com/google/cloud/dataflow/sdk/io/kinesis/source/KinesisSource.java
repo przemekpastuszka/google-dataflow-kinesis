@@ -25,6 +25,7 @@ import com.google.cloud.dataflow.sdk.coders.SerializableCoder;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.KinesisClientProvider;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StartingPoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator.CheckpointGenerator;
@@ -34,7 +35,6 @@ import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.generator
         .StaticCheckpointGenerator;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 
-import com.amazonaws.services.kinesis.model.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
@@ -43,7 +43,7 @@ import java.util.List;
 /***
  *
  */
-public class KinesisSource extends UnboundedSource<Record, KinesisReaderCheckpoint> {
+public class KinesisSource extends UnboundedSource<KinesisRecord, KinesisReaderCheckpoint> {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisSource.class);
 
     private final KinesisClientProvider kinesis;
@@ -78,7 +78,7 @@ public class KinesisSource extends UnboundedSource<Record, KinesisReaderCheckpoi
     }
 
     @Override
-    public UnboundedReader<Record> createReader(PipelineOptions options,
+    public UnboundedReader<KinesisRecord> createReader(PipelineOptions options,
                                                 KinesisReaderCheckpoint checkpointMark) {
 
         CheckpointGenerator checkpointGenerator = initialCheckpointGenerator;
@@ -107,9 +107,7 @@ public class KinesisSource extends UnboundedSource<Record, KinesisReaderCheckpoi
     }
 
     @Override
-    public Coder<Record> getDefaultOutputCoder() {
+    public Coder<KinesisRecord> getDefaultOutputCoder() {
         return KinesisRecordCoder.of();
     }
-
-
 }

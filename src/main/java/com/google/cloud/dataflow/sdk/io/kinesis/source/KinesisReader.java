@@ -30,7 +30,6 @@ import com.google.cloud.dataflow.sdk.io.kinesis.utils.RoundRobin;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.CustomOptional;
 import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Optional;
 
-import com.amazonaws.services.kinesis.model.Record;
 import org.joda.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,19 +41,19 @@ import java.util.NoSuchElementException;
 /***
  * Reads data from multiple kinesis shards in a single thread.
  */
-class KinesisReader extends UnboundedSource.UnboundedReader<Record> {
+class KinesisReader extends UnboundedSource.UnboundedReader<KinesisRecord> {
     private static final Logger LOG = LoggerFactory.getLogger(KinesisReader.class);
 
     private final SimplifiedKinesisClient kinesis;
-    private final UnboundedSource<Record, ?> source;
+    private final UnboundedSource<KinesisRecord, ?> source;
     private final CheckpointGenerator initialCheckpointGenerator;
     private RoundRobin<ShardRecordsIterator> shardIterators;
     private Optional<KinesisRecord> currentRecord = CustomOptional.absent();
-    private Optional<Instant> currendRecordTimestamp = CustomOptional.absent();
+    private Optional<Instant> currentRecordTimestamp = CustomOptional.absent();
 
     public KinesisReader(SimplifiedKinesisClient kinesis,
                          CheckpointGenerator initialCheckpointGenerator,
-                         UnboundedSource<Record, ?> source) {
+                         UnboundedSource<KinesisRecord, ?> source) {
         checkNotNull(kinesis);
         checkNotNull(initialCheckpointGenerator);
 
@@ -90,7 +89,7 @@ class KinesisReader extends UnboundedSource.UnboundedReader<Record> {
         for (int i = 0; i < shardIterators.size(); ++i) {
             currentRecord = shardIterators.getCurrent().next();
             if (currentRecord.isPresent()) {
-                currendRecordTimestamp = Optional.of(Instant.now());
+                currentRecordTimestamp = Optional.of(Instant.now());
                 return true;
             } else {
                 shardIterators.moveForward();
@@ -105,7 +104,7 @@ class KinesisReader extends UnboundedSource.UnboundedReader<Record> {
     }
 
     @Override
-    public Record getCurrent() throws NoSuchElementException {
+    public KinesisRecord getCurrent() throws NoSuchElementException {
         return currentRecord.get();
     }
 
@@ -117,7 +116,7 @@ class KinesisReader extends UnboundedSource.UnboundedReader<Record> {
      */
     @Override
     public Instant getCurrentTimestamp() throws NoSuchElementException {
-        return currendRecordTimestamp.get();
+        return currentRecordTimestamp.get();
     }
 
     @Override
@@ -141,7 +140,7 @@ class KinesisReader extends UnboundedSource.UnboundedReader<Record> {
     }
 
     @Override
-    public UnboundedSource<Record, ?> getCurrentSource() {
+    public UnboundedSource<KinesisRecord, ?> getCurrentSource() {
         return source;
     }
 

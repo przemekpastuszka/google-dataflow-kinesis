@@ -23,6 +23,8 @@ import com.google.cloud.dataflow.sdk.coders.CoderException;
 import com.google.cloud.dataflow.sdk.coders.InstantCoder;
 import com.google.cloud.dataflow.sdk.coders.StandardCoder;
 import com.google.cloud.dataflow.sdk.coders.StringUtf8Coder;
+import com.google.cloud.dataflow.sdk.coders.VarLongCoder;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 
 import com.amazonaws.services.kinesis.model.Record;
 import org.joda.time.Instant;
@@ -30,39 +32,53 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.Date;
 import java.util.List;
 
 /**
  * Created by p.pastuszka on 07/04/16.
  */
-public class KinesisRecordCoder extends StandardCoder<Record> {
+public class KinesisRecordCoder extends StandardCoder<KinesisRecord> {
     private static final StringUtf8Coder stringCoder = StringUtf8Coder.of();
     private static final ByteArrayCoder byteArrayCoder = ByteArrayCoder.of();
     private static final InstantCoder instantCoder = InstantCoder.of();
+    private static final VarLongCoder varLongCoder = VarLongCoder.of();
 
     public static KinesisRecordCoder of() {
         return new KinesisRecordCoder();
     }
 
     @Override
-    public void encode(Record value, OutputStream outStream, Context context) throws
+    public void encode(KinesisRecord value, OutputStream outStream, Context context) throws
             CoderException, IOException {
         Context nested = context.nested();
         byteArrayCoder.encode(value.getData().array(), outStream, nested);
         stringCoder.encode(value.getSequenceNumber(), outStream, nested);
         stringCoder.encode(value.getPartitionKey(), outStream, nested);
         instantCoder.encode(new Instant(value.getApproximateArrivalTimestamp()), outStream, nested);
-
+        varLongCoder.encode(value.getSubSequenceNumber(), outStream, nested);
+        instantCoder.encode(new Instant(value.getReadTime()), outStream, nested);
+        stringCoder.encode(value.getStreamName(), outStream, nested);
+        stringCoder.encode(value.getShardId(), outStream, nested);
     }
 
     @Override
-    public Record decode(InputStream inStream, Context context) throws CoderException, IOException {
+    public KinesisRecord decode(InputStream inStream, Context context) throws CoderException, IOException {
         Context nested = context.nested();
-        return new Record().
-                withData(ByteBuffer.wrap(byteArrayCoder.decode(inStream, nested))).
-                withSequenceNumber(stringCoder.decode(inStream, nested)).
-                withPartitionKey(stringCoder.decode(inStream, nested)).
-                withApproximateArrivalTimestamp(instantCoder.decode(inStream, nested).toDate());
+        ByteBuffer data = ByteBuffer.wrap(byteArrayCoder.decode(inStream, nested));
+        String sequenceNumber = stringCoder.decode(inStream, nested);
+        String partitionKey = stringCoder.decode(inStream, nested);
+        Date approximateArrivalTimestamp = instantCoder.decode(inStream, nested).toDate();
+        long subSequenceNumber = varLongCoder.decode(inStream, nested);
+        Date readTimestamp = instantCoder.decode(inStream, nested).toDate();
+        String streamName = stringCoder.decode(inStream, nested);
+        String shardId = stringCoder.decode(inStream, nested);
+        Record record = new Record().
+                withData(data).
+                withSequenceNumber(sequenceNumber).
+                withPartitionKey(partitionKey).
+                withApproximateArrivalTimestamp(approximateArrivalTimestamp);
+        return new KinesisRecord(record, subSequenceNumber, readTimestamp, streamName, shardId);
     }
 
     @Override
@@ -75,5 +91,6 @@ public class KinesisRecordCoder extends StandardCoder<Record> {
         stringCoder.verifyDeterministic();
         byteArrayCoder.verifyDeterministic();
         instantCoder.verifyDeterministic();
+        varLongCoder.verifyDeterministic();
     }
 }

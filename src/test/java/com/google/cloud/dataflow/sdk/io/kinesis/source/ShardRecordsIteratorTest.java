@@ -52,12 +52,13 @@ public class ShardRecordsIteratorTest {
     private static final String SECOND_ITERATOR = "SECOND_ITERATOR";
     private static final String SECOND_REFRESHED_ITERATOR = "SECOND_REFRESHED_ITERATOR";
     private static final String THIRD_ITERATOR = "THIRD_ITERATOR";
+    private static final String STREAM_NAME = "STREAM_NAME";
+    private static final String SHARD_ID = "SHARD_ID";
 
     @Mock
     private SimplifiedKinesisClient kinesisClient;
     @Mock
-    private ShardCheckpoint firstCheckpoint, aCheckpoint, bCheckpoint, cCheckpoint,
-            dCheckpoint;
+    private ShardCheckpoint firstCheckpoint, aCheckpoint, bCheckpoint, cCheckpoint, dCheckpoint;
     @Mock
     private GetKinesisRecordsResult firstResult, secondResult, thirdResult;
     @Mock
@@ -70,15 +71,28 @@ public class ShardRecordsIteratorTest {
     @Before
     public void setUp() throws IOException {
         when(firstCheckpoint.getShardIterator(kinesisClient)).thenReturn(INITIAL_ITERATOR);
+        when(firstCheckpoint.getStreamName()).thenReturn(STREAM_NAME);
+        when(firstCheckpoint.getShardId()).thenReturn(SHARD_ID);
 
         when(firstCheckpoint.moveAfter(a)).thenReturn(aCheckpoint);
         when(aCheckpoint.moveAfter(b)).thenReturn(bCheckpoint);
+        when(aCheckpoint.getStreamName()).thenReturn(STREAM_NAME);
+        when(aCheckpoint.getShardId()).thenReturn(SHARD_ID);
         when(bCheckpoint.moveAfter(c)).thenReturn(cCheckpoint);
+        when(bCheckpoint.getStreamName()).thenReturn(STREAM_NAME);
+        when(bCheckpoint.getShardId()).thenReturn(SHARD_ID);
         when(cCheckpoint.moveAfter(d)).thenReturn(dCheckpoint);
+        when(cCheckpoint.getStreamName()).thenReturn(STREAM_NAME);
+        when(cCheckpoint.getShardId()).thenReturn(SHARD_ID);
+        when(dCheckpoint.getStreamName()).thenReturn(STREAM_NAME);
+        when(dCheckpoint.getShardId()).thenReturn(SHARD_ID);
 
-        when(kinesisClient.getRecords(INITIAL_ITERATOR)).thenReturn(firstResult);
-        when(kinesisClient.getRecords(SECOND_ITERATOR)).thenReturn(secondResult);
-        when(kinesisClient.getRecords(THIRD_ITERATOR)).thenReturn(thirdResult);
+        when(kinesisClient.getRecords(INITIAL_ITERATOR, STREAM_NAME, SHARD_ID))
+                .thenReturn(firstResult);
+        when(kinesisClient.getRecords(SECOND_ITERATOR, STREAM_NAME, SHARD_ID))
+                .thenReturn(secondResult);
+        when(kinesisClient.getRecords(THIRD_ITERATOR, STREAM_NAME, SHARD_ID))
+                .thenReturn(thirdResult);
 
         when(firstResult.getNextShardIterator()).thenReturn(SECOND_ITERATOR);
         when(secondResult.getNextShardIterator()).thenReturn(THIRD_ITERATOR);
@@ -124,9 +138,12 @@ public class ShardRecordsIteratorTest {
         when(firstResult.getRecords()).thenReturn(singletonList(a));
         when(secondResult.getRecords()).thenReturn(singletonList(b));
 
-        when(kinesisClient.getRecords(SECOND_ITERATOR)).thenThrow(ExpiredIteratorException.class);
-        when(aCheckpoint.getShardIterator(kinesisClient)).thenReturn(SECOND_REFRESHED_ITERATOR);
-        when(kinesisClient.getRecords(SECOND_REFRESHED_ITERATOR)).thenReturn(secondResult);
+        when(kinesisClient.getRecords(SECOND_ITERATOR, STREAM_NAME, SHARD_ID))
+                .thenThrow(ExpiredIteratorException.class);
+        when(aCheckpoint.getShardIterator(kinesisClient))
+                .thenReturn(SECOND_REFRESHED_ITERATOR);
+        when(kinesisClient.getRecords(SECOND_REFRESHED_ITERATOR, STREAM_NAME, SHARD_ID))
+                .thenReturn(secondResult);
 
         assertThat(iterator.next()).isEqualTo(Optional.of(a));
         assertThat(iterator.next()).isEqualTo(Optional.of(b));

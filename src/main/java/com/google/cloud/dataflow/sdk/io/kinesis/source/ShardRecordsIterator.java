@@ -87,11 +87,13 @@ public class ShardRecordsIterator {
         if (data.isEmpty()) {
             GetKinesisRecordsResult response;
             try {
-                response = kinesis.getRecords(shardIterator);
+                response = kinesis.getRecords(shardIterator, checkpoint.getStreamName(),
+                                              checkpoint.getShardId());
             } catch (ExpiredIteratorException e) {
                 LOG.info("Refreshing expired iterator", e);
                 shardIterator = checkpoint.getShardIterator(kinesis);
-                response = kinesis.getRecords(shardIterator);
+                response = kinesis.getRecords(shardIterator, checkpoint.getStreamName(),
+                                              checkpoint.getShardId());
             }
             LOG.debug("Fetched {} new records", response.getRecords().size());
             shardIterator = response.getNextShardIterator();
