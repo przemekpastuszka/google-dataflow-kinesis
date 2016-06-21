@@ -60,7 +60,7 @@ public class SimplifiedKinesisClient {
     public String getShardIterator(final String streamName, final String shardId,
                                    final ShardIteratorType shardIteratorType,
                                    final String startingSequenceNumber, final Date timestamp)
-            throws IOException {
+            throws TransientKinesisException {
         return wrapExceptions(new Callable<String>() {
             @Override
             public String call() throws Exception {
@@ -75,7 +75,7 @@ public class SimplifiedKinesisClient {
         });
     }
 
-    public List<Shard> listShards(final String streamName) throws IOException {
+    public List<Shard> listShards(final String streamName) throws TransientKinesisException {
         return wrapExceptions(new Callable<List<Shard>>() {
             @Override
             public List<Shard> call() throws Exception {
@@ -103,7 +103,7 @@ public class SimplifiedKinesisClient {
      * @throws IOException - in case of recoverable situation
      */
     public GetKinesisRecordsResult getRecords(String shardIterator, String streamName,
-                                              String shardId) throws IOException {
+                                              String shardId) throws TransientKinesisException {
         return getRecords(shardIterator, streamName, shardId, null);
     }
 
@@ -116,7 +116,7 @@ public class SimplifiedKinesisClient {
     public GetKinesisRecordsResult getRecords(final String shardIterator, final String streamName,
                                               final String shardId, final Integer limit)
             throws
-            IOException {
+            TransientKinesisException {
         return wrapExceptions(new Callable<GetKinesisRecordsResult>() {
             @Override
             public GetKinesisRecordsResult call() throws Exception {
@@ -139,18 +139,18 @@ public class SimplifiedKinesisClient {
      * @throws ExpiredIteratorException - if iterator needs to be refreshed
      * @throws RuntimeException - in all other cases
      */
-    private <T> T wrapExceptions(Callable<T> callable) throws IOException {
+    private <T> T wrapExceptions(Callable<T> callable) throws TransientKinesisException {
         try {
             return callable.call();
         } catch (ExpiredIteratorException e) {
             throw e;
         } catch (LimitExceededException | ProvisionedThroughputExceededException e) {
             LOG.warn("Too many requests to Kinesis", e);
-            throw new IOException(e);
+            throw new TransientKinesisException(e);
         } catch (AmazonServiceException e) {
             if (e.getErrorType() == AmazonServiceException.ErrorType.Service) {
                 LOG.warn("Kinesis backend failed", e);
-                throw new IOException(e);
+                throw new TransientKinesisException(e);
             }
             LOG.error("Client side failure", e);
             throw new RuntimeException(e);

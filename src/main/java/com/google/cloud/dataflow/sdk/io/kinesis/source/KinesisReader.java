@@ -17,11 +17,11 @@
  */
 package com.google.cloud.dataflow.sdk.io.kinesis.source;
 
-import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions
-        .checkNotNull;
+import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions.checkNotNull;
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Lists.newArrayList;
 import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.TransientKinesisException;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
@@ -69,12 +69,16 @@ class KinesisReader extends UnboundedSource.UnboundedReader<KinesisRecord> {
     public boolean start() throws IOException {
         LOG.info("Starting reader using {}", initialCheckpointGenerator);
 
-        KinesisReaderCheckpoint initialCheckpoint = initialCheckpointGenerator.generate(kinesis);
-        List<ShardRecordsIterator> iterators = newArrayList();
-        for (ShardCheckpoint checkpoint : initialCheckpoint) {
-            iterators.add(checkpoint.getShardRecordsIterator(kinesis));
+        try {
+            KinesisReaderCheckpoint initialCheckpoint = initialCheckpointGenerator.generate(kinesis);
+            List<ShardRecordsIterator> iterators = newArrayList();
+            for (ShardCheckpoint checkpoint : initialCheckpoint) {
+                iterators.add(checkpoint.getShardRecordsIterator(kinesis));
+            }
+            shardIterators = new RoundRobin<>(iterators);
+        } catch (TransientKinesisException e) {
+            throw new IOException(e);
         }
-        shardIterators = new RoundRobin<>(iterators);
 
         return advance();
     }
@@ -86,14 +90,18 @@ class KinesisReader extends UnboundedSource.UnboundedReader<KinesisRecord> {
      */
     @Override
     public boolean advance() throws IOException {
-        for (int i = 0; i < shardIterators.size(); ++i) {
-            currentRecord = shardIterators.getCurrent().next();
-            if (currentRecord.isPresent()) {
-                currentRecordTimestamp = Optional.of(Instant.now());
-                return true;
-            } else {
-                shardIterators.moveForward();
+        try {
+            for (int i = 0; i < shardIterators.size(); ++i) {
+                currentRecord = shardIterators.getCurrent().next();
+                if (currentRecord.isPresent()) {
+                    currentRecordTimestamp = Optional.of(Instant.now());
+                    return true;
+                } else {
+                    shardIterators.moveForward();
+                }
             }
+        } catch (TransientKinesisException e) {
+            LOG.warn("Transient exception occurred: {}", e);
         }
         return false;
     }

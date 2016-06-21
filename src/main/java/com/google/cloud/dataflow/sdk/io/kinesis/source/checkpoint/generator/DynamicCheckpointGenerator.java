@@ -21,6 +21,7 @@ import static com.google.api.client.repackaged.com.google.common.base.Preconditi
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Iterables
         .transform;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.TransientKinesisException;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.StartingPoint;
@@ -46,7 +47,7 @@ public class DynamicCheckpointGenerator implements CheckpointGenerator {
     }
 
     @Override
-    public KinesisReaderCheckpoint generate(SimplifiedKinesisClient kinesis) throws IOException {
+    public KinesisReaderCheckpoint generate(SimplifiedKinesisClient kinesis) throws TransientKinesisException {
         return new KinesisReaderCheckpoint(
                 transform(kinesis.listShards(streamName), new Function<Shard, ShardCheckpoint>() {
                     @Override

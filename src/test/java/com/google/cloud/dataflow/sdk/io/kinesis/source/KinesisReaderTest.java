@@ -18,6 +18,7 @@
 package com.google.cloud.dataflow.sdk.io.kinesis.source;
 
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.TransientKinesisException;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.KinesisReaderCheckpoint;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
@@ -55,7 +56,7 @@ public class KinesisReaderTest {
     private KinesisReader reader;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, TransientKinesisException {
         when(generator.generate(kinesis)).thenReturn(new KinesisReaderCheckpoint(
                 asList(firstCheckpoint, secondCheckpoint)
         ));
@@ -79,7 +80,7 @@ public class KinesisReaderTest {
     }
 
     @Test
-    public void startReturnsTrueIfSomeDataAvailable() throws IOException {
+    public void startReturnsTrueIfSomeDataAvailable() throws IOException, TransientKinesisException {
         when(firstIterator.next()).
                 thenReturn(Optional.of(a)).
                 thenReturn(CustomOptional.<KinesisRecord>absent());
@@ -88,7 +89,16 @@ public class KinesisReaderTest {
     }
 
     @Test
-    public void readsThroughAllDataAvailable() throws IOException {
+    public void advanceReturnsFalseIfThereIsTransientExceptionInKinesis() throws IOException, TransientKinesisException {
+        reader.start();
+
+        when(firstIterator.next()).thenThrow(TransientKinesisException.class);
+
+        assertThat(reader.advance()).isFalse();
+    }
+
+    @Test
+    public void readsThroughAllDataAvailable() throws IOException, TransientKinesisException {
         when(firstIterator.next()).
                 thenReturn(CustomOptional.<KinesisRecord>absent()).
                 thenReturn(Optional.of(a)).

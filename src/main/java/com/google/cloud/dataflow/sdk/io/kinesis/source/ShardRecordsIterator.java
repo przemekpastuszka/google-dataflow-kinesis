@@ -22,6 +22,7 @@ import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Pr
 import static com.google.cloud.dataflow.sdk.repackaged.com.google.common.collect.Queues
         .newArrayDeque;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.TransientKinesisException;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.GetKinesisRecordsResult;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
@@ -50,14 +51,14 @@ public class ShardRecordsIterator {
 
     public ShardRecordsIterator(final ShardCheckpoint initialCheckpoint,
                                 SimplifiedKinesisClient simplifiedKinesisClient) throws
-            IOException {
+            TransientKinesisException {
         this(initialCheckpoint, simplifiedKinesisClient, new RecordFilter());
     }
 
     public ShardRecordsIterator(final ShardCheckpoint initialCheckpoint,
                                 SimplifiedKinesisClient simplifiedKinesisClient,
                                 RecordFilter filter) throws
-            IOException {
+            TransientKinesisException {
         checkNotNull(initialCheckpoint);
         checkNotNull(simplifiedKinesisClient);
 
@@ -71,7 +72,7 @@ public class ShardRecordsIterator {
      * Returns record if there's any present.
      * Returns absent() if there are no new records at this time in the shard.
      */
-    public Optional<KinesisRecord> next() throws IOException {
+    public Optional<KinesisRecord> next() throws TransientKinesisException {
         readMoreIfNecessary();
 
         if (data.isEmpty()) {
@@ -83,7 +84,7 @@ public class ShardRecordsIterator {
         }
     }
 
-    private void readMoreIfNecessary() throws IOException {
+    private void readMoreIfNecessary() throws TransientKinesisException {
         if (data.isEmpty()) {
             GetKinesisRecordsResult response;
             try {

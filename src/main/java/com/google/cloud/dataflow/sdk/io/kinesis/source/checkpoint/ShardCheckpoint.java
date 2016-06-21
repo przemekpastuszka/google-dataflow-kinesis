@@ -23,6 +23,7 @@ import static com.amazonaws.services.kinesis.model.ShardIteratorType.AFTER_SEQUE
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.AT_SEQUENCE_NUMBER;
 import static com.amazonaws.services.kinesis.model.ShardIteratorType.AT_TIMESTAMP;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.TransientKinesisException;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.ShardRecordsIterator;
 import com.amazonaws.services.kinesis.clientlibrary.types.ExtendedSequenceNumber;
@@ -138,11 +139,11 @@ public class ShardCheckpoint implements Serializable {
     }
 
     public ShardRecordsIterator getShardRecordsIterator(SimplifiedKinesisClient kinesis)
-            throws IOException {
+            throws TransientKinesisException {
         return new ShardRecordsIterator(this, kinesis);
     }
 
-    public String getShardIterator(SimplifiedKinesisClient kinesisClient) throws IOException {
+    public String getShardIterator(SimplifiedKinesisClient kinesisClient) throws TransientKinesisException {
         if (checkpointIsInTheMiddleOfAUserRecord()) {
             return kinesisClient.getShardIterator(streamName,
                     shardId, AT_SEQUENCE_NUMBER,

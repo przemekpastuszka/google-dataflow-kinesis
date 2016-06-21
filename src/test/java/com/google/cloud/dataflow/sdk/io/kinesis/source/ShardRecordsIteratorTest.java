@@ -25,6 +25,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
 import com.google.cloud.dataflow.sdk.io.kinesis.client.SimplifiedKinesisClient;
+import com.google.cloud.dataflow.sdk.io.kinesis.client.TransientKinesisException;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.GetKinesisRecordsResult;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.google.cloud.dataflow.sdk.io.kinesis.source.checkpoint.ShardCheckpoint;
@@ -69,7 +70,7 @@ public class ShardRecordsIteratorTest {
     private ShardRecordsIterator iterator;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, TransientKinesisException {
         when(firstCheckpoint.getShardIterator(kinesisClient)).thenReturn(INITIAL_ITERATOR);
         when(firstCheckpoint.getStreamName()).thenReturn(STREAM_NAME);
         when(firstCheckpoint.getShardId()).thenReturn(SHARD_ID);
@@ -109,14 +110,14 @@ public class ShardRecordsIteratorTest {
     }
 
     @Test
-    public void returnsAbsentIfNoRecordsPresent() throws IOException {
+    public void returnsAbsentIfNoRecordsPresent() throws IOException, TransientKinesisException {
         assertThat(iterator.next()).isEqualTo(CustomOptional.absent());
         assertThat(iterator.next()).isEqualTo(CustomOptional.absent());
         assertThat(iterator.next()).isEqualTo(CustomOptional.absent());
     }
 
     @Test
-    public void goesThroughAvailableRecords() throws IOException {
+    public void goesThroughAvailableRecords() throws IOException, TransientKinesisException {
         when(firstResult.getRecords()).thenReturn(asList(a, b, c));
         when(secondResult.getRecords()).thenReturn(singletonList(d));
 
@@ -134,7 +135,7 @@ public class ShardRecordsIteratorTest {
     }
 
     @Test
-    public void refreshesExpiredIterator() throws IOException {
+    public void refreshesExpiredIterator() throws IOException, TransientKinesisException {
         when(firstResult.getRecords()).thenReturn(singletonList(a));
         when(secondResult.getRecords()).thenReturn(singletonList(b));
 

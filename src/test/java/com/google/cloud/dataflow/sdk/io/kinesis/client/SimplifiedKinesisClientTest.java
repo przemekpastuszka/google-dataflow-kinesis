@@ -102,19 +102,19 @@ public class SimplifiedKinesisClientTest {
     @Test
     public void shouldHandleLimitExceededExceptionForGetShardIterator() {
         shouldHandleGetShardIteratorError(new LimitExceededException(""),
-                IOException.class);
+                TransientKinesisException.class);
     }
 
     @Test
     public void shouldHandleProvisionedThroughputExceededExceptionForGetShardIterator() {
         shouldHandleGetShardIteratorError(new ProvisionedThroughputExceededException(""),
-                IOException.class);
+                TransientKinesisException.class);
     }
 
     @Test
     public void shouldHandleServiceErrorForGetShardIterator() {
         shouldHandleGetShardIteratorError(newAmazonServiceException(ErrorType.Service),
-                IOException.class);
+                TransientKinesisException.class);
     }
 
     @Test
@@ -177,19 +177,19 @@ public class SimplifiedKinesisClientTest {
     @Test
     public void shouldHandleLimitExceededExceptionForShardListing() {
         shouldHandleShardListingError(new LimitExceededException(""),
-                IOException.class);
+                TransientKinesisException.class);
     }
 
     @Test
     public void shouldHandleProvisionedThroughputExceededExceptionForShardListing() {
         shouldHandleShardListingError(new ProvisionedThroughputExceededException(""),
-                IOException.class);
+                TransientKinesisException.class);
     }
 
     @Test
     public void shouldHandleServiceErrorForShardListing() {
         shouldHandleShardListingError(newAmazonServiceException(ErrorType.Service),
-                IOException.class);
+                TransientKinesisException.class);
     }
 
     @Test

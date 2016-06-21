@@ -34,6 +34,7 @@ import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.cloud.dataflow.sdk.io.kinesis.client.TransientKinesisException;
 import com.google.cloud.dataflow.sdk.io.kinesis.client.response.KinesisRecord;
 import com.amazonaws.services.kinesis.clientlibrary.types.ExtendedSequenceNumber;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
@@ -59,7 +60,7 @@ public class ShardCheckpointTest {
     private SimplifiedKinesisClient client;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, TransientKinesisException {
         when(client.getShardIterator(
                 eq(STREAM_NAME), eq(SHARD_ID), eq(AT_SEQUENCE_NUMBER),
                 anyString(), isNull(Date.class))).
@@ -71,7 +72,7 @@ public class ShardCheckpointTest {
     }
 
     @Test
-    public void testProvidingShardIterator() throws IOException {
+    public void testProvidingShardIterator() throws IOException, TransientKinesisException {
         assertThat(checkpoint(AT_SEQUENCE_NUMBER, "100", null).getShardIterator(client))
                 .isEqualTo(AT_SEQUENCE_SHARD_IT);
         assertThat(checkpoint(AFTER_SEQUENCE_NUMBER, "100", null).getShardIterator(client))
