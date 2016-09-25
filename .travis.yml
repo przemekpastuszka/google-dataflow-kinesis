@@ -1,3 +1,0 @@
-before_install:
-    make prepare-local-maven
-language: java

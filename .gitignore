@@ -1,8 +1,0 @@
-*.iml
-*.ipr
-*.iws
-.idea
-.gradle
-build
-src/integration/resources/testconfig.json
-tmp
